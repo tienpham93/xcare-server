@@ -90,7 +90,7 @@ export const postTicketHandler = async (req: Request, res: Response): Promise<vo
 };
 
 export const postAnalyticHandler = async (req: Request, res: Response): Promise<void> => {
-    const { conversation, vote } = req.body;
+    const { conversation, vote, evalMetadata } = req.body;
     try {
         const data = fs.readFileSync(path.join(process.cwd(), 'src/data/analyticData.json'), 'utf8');
         const voteData = await JSON.parse(data);
@@ -99,7 +99,8 @@ export const postAnalyticHandler = async (req: Request, res: Response): Promise<
                 user: conversation.user,
                 bot: conversation.bot
             },
-            vote: vote
+            vote: vote,
+            evalMetadata: evalMetadata
         };
         await voteData.push(newVote);
         fs.writeFileSync(path.join(process.cwd(), 'src/data/analyticData.json'), JSON.stringify(await voteData, null, 2));
@@ -110,7 +111,7 @@ export const postAnalyticHandler = async (req: Request, res: Response): Promise<
 };
 
 export const postMonitoringHandler = async (req: Request, res: Response): Promise<void> => {
-    const { conversation, isManIntervention } = req.body;
+    const { conversation, isManIntervention, evalMetadata } = req.body;
 
     try {
         const data = fs.readFileSync(path.join(process.cwd(), 'src/data/monitoringData.json'), 'utf8');
@@ -120,7 +121,8 @@ export const postMonitoringHandler = async (req: Request, res: Response): Promis
                 user: conversation.user,
                 bot: conversation.bot
             },
-            isManIntervention: isManIntervention
+            isManIntervention: isManIntervention,
+            evalMetadata: evalMetadata
         };
         await monitorData.push(newMonitorData);
         fs.writeFileSync(path.join(process.cwd(), 'src/data/monitoringData.json'), JSON.stringify(await monitorData, null, 2));
