@@ -1,15 +1,17 @@
 import { Request, Response } from 'express';
 import { OllamaResponse } from '../types';
 import { logger } from '../utils/logger';
-import { ollamaService, serverHost, stateManager } from '../server';
+import { ollamaService, serverHost } from '../server';
 import { AuthService } from '../services/authService';
 import { parseAnswer } from '../utils/stringFormat';
+import { agentGraph } from '../services/graph/agentGraph';
 
 export const postGenerateHandler = async (
     req: Request,
     res: Response
 ) => {
-    const { model, prompt, sessionId = 'greeting', messageType, username } = req.body;
+    const { model, prompt, sessionId = 'greeting', messageType = 'general', username } = req.body;
+    
     // Verify Auth Token
     const authService = new AuthService();
     const authToken = req.headers.authorization;
@@ -32,16 +34,23 @@ export const postGenerateHandler = async (
             ollamaService.setModel(model);
         }
 
-        const { currentStateName, response } = await stateManager.handleMessage(sessionId, prompt, messageType, username);
-        const sessionMetadata = stateManager.sessions.get(sessionId);
+        // Invoke LangGraph Agent
+        const graphResult = await agentGraph.invoke({
+            question: prompt,
+            username: username || 'anonymous',
+            messageType: messageType,
+            history: [], // We can expand this for multi-turn later
+        }, {
+            configurable: {
+                llm: ollamaService['llm'] // Direct access for the graph
+            }
+        });
 
-        let metadata = {
-            currentState: currentStateName,
-            sessionData: sessionMetadata?.sessionData
-        };
+        const response = graphResult.generation;
+        const evalMetadata = graphResult.evalMetadata;
 
         let botResponse: OllamaResponse = {
-            model: model,
+            model: ollamaService.modelConfig.name,
             message: [
                 {
                     role: 'user',
@@ -52,15 +61,15 @@ export const postGenerateHandler = async (
                 }
             ],
             metadata: {
-                currentState: metadata?.currentState,
-                sessionData: metadata?.sessionData
+                currentState: 'langgraph_managed',
+                sessionData: evalMetadata // Include rich metadata for the evaluator
             },
         }
 
-        // Check if the bot response requires human intervention
-        const rawAnswer = await parseAnswer(response);
-        if (rawAnswer.isManIntervention) {
-            logger.info('Bot request human intervention');
+        // Check if the bot response requires human intervention (via Graph metadata)
+        if (evalMetadata.requiresHumanIntervention) {
+            logger.info('Bot request human intervention (via graph)');
+            const parsed = parseAnswer(response);
             await fetch(`${serverHost}/agent/monitoring`, {
                 method: 'POST',
                 headers: {
@@ -69,20 +78,22 @@ export const postGenerateHandler = async (
                 body: JSON.stringify({
                     conversation: {
                         user: prompt,
-                        bot: rawAnswer.answer
+                        bot: parsed.answer
                     },
-                    isManIntervention: rawAnswer.isManIntervention
+                    isManIntervention: true,
+                    evalMetadata: evalMetadata // Pass along the audit trail
                 })
             });
         };
 
-        logger.info('Bot response:', botResponse);
+        logger.info('Bot response generated via LangGraph');
         res.json({
             sessionId: sessionId,
-            conversation: botResponse
+            conversation: botResponse,
+            debug: evalMetadata // New field for professional evaluation
         });
     } catch (error) {
-        logger.error('Failed to prompt:', error);
+        logger.error('Failed to prompt via LangGraph:', error);
         res.status(500).json({ error: 'Failed to prompt' });
     };
 };

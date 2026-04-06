@@ -1,24 +1,24 @@
 import { Knowledge, SearchResult } from "../../types";
 import { logger } from "../../utils/logger";
-import { BPEEmbeddingService } from "./BPEEmbeddingService";
-import { VectorStore } from "./vectorStore";
+import { OllamaEmbeddings } from "@langchain/ollama";
 import fs from 'fs';
 import path from 'path';
-import { MinHashEmbeddingService } from "./minHashEmbeddingService";
-import { keywordsNLP } from "../../server";
+import { EMBEDDING_MODEL, ollamaPort } from "../../env";
+import { Document } from "@langchain/core/documents";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
 export class KnowledgeBase {
     private static instance: KnowledgeBase;
-    private vectorStore: VectorStore;
-    private bpeEmbeddings: BPEEmbeddingService;
-    private minhashEmbeddings: MinHashEmbeddingService;
+    private vectorStore: MemoryVectorStore | null = null;
+    private embeddings: OllamaEmbeddings;
 
     private localStorePath: string = path.join(process.cwd(), '/.faiss_store/documents.json');
 
     private constructor() {
-        this.vectorStore = VectorStore.getInstance();
-        this.bpeEmbeddings = new BPEEmbeddingService();
-        this.minhashEmbeddings = new MinHashEmbeddingService();
+        this.embeddings = new OllamaEmbeddings({
+            model: EMBEDDING_MODEL,
+            baseUrl: `http://127.0.0.1:${ollamaPort}`,
+        });
     }
 
     public static getInstance(): KnowledgeBase {
@@ -30,30 +30,43 @@ export class KnowledgeBase {
 
     public async initializeKnowledgeBase(sourcePath: string): Promise<void> {
         try {
-            const documents = await this.vectorStore.load(sourcePath);
-            const predefinedKnowledge: Knowledge[] = [];
-            const allKnowledge = documents.concat(predefinedKnowledge);
-            // Add predefined knowledge to the vector store
-            const knowledgeWithEmbeddings = await Promise.all(
-                allKnowledge.map(async (knowledge) => ({
-                    ...knowledge,
-                    embedding: await this.bpeEmbeddings.generateEmbedding(knowledge.content)
-                }))
+            // Load documents from the source path
+            const files = await fs.promises.readdir(sourcePath);
+            const jsonFiles = files.filter(file => file.endsWith('.json'));
+            let allKnowledge: Knowledge[] = [];
+            
+            for (const file of jsonFiles) {
+                const filePath = path.join(sourcePath, file);
+                const content = await fs.promises.readFile(filePath, 'utf-8');
+                allKnowledge = allKnowledge.concat(JSON.parse(content));
+            }
+
+            // Convert to LangChain Documents
+            const langchainDocs = allKnowledge.map(k => new Document({
+                pageContent: k.content,
+                metadata: {
+                    topic: k.topic,
+                    category: k.category,
+                    ...k.metadata
+                }
+            }));
+
+            // Initialize MemoryVectorStore (or swap for FaissStore if persistence is needed immediately)
+            this.vectorStore = await MemoryVectorStore.fromDocuments(
+                langchainDocs,
+                this.embeddings
             );
 
-            // Add all knowledge to the vector store
-            await this.vectorStore.addDocuments(knowledgeWithEmbeddings);
-
-            // Save the knowledge to local storage
+            // Save for compatibility/audit purposes
             try {
                 await fs.promises.mkdir(path.dirname(this.localStorePath), { recursive: true });
-                await fs.promises.writeFile(this.localStorePath, JSON.stringify(knowledgeWithEmbeddings));
-                logger.info('Saved the knowledge base to local storage');
+                await fs.promises.writeFile(this.localStorePath, JSON.stringify(allKnowledge));
+                logger.info('Saved the raw knowledge base for audit tracking');
             } catch (error) {
                 logger.error('Failed to save the knowledge base to local storage:', error);
             }
 
-            logger.info('Initialized the knowledge base');
+            logger.info('Initialized the knowledge base with OllamaEmbeddings');
         } catch (error) {
             logger.error('Failed to initialize the knowledge base:', error);
             throw error;
@@ -61,70 +74,45 @@ export class KnowledgeBase {
     }
 
     public async searchRelevant(text: string): Promise<SearchResult[] | null> {
-        text = text.toLowerCase();
-
-        const bpeQuery = await this.bpeEmbeddings.generateEmbedding(text);
-        const bpeData = await this.vectorStore.search(bpeQuery, 14);
-
-        // Filter all objects that have the category "keywords"
-        const keywordCategoryObjects = bpeData.filter(obj => obj.category === "keywords");
-
-        const minhashQuery = await this.minhashEmbeddings.generateEmbedding(text);
-        const minhashData = await this.vectorStore.search(minhashQuery, 14);
-
-        const keywords = await keywordsNLP.loadDocuments(keywordCategoryObjects);
-        await keywordsNLP.ingestDocuments(keywords);
-        const nlpMatchTopic = await keywordsNLP.search(text);
-        console.log(`>>> NLP matched topic: ${nlpMatchTopic}`);
-
-        // Find the object with the highest similarity
-        const bpeHighestSimilarity = bpeData.reduce((prev, current) => (prev.similarity > current.similarity) ? prev : current);
-        const minHashHighestSimilarity = minhashData.reduce((prev, current) => (prev.similarity > current.similarity) ? prev : current);
-        console.log(`>>> BPE highest: ${bpeHighestSimilarity.topic} score ${bpeHighestSimilarity.similarity}`);
-        console.log(`>>> MinHash highest: ${minHashHighestSimilarity.topic} score ${minHashHighestSimilarity.similarity}`);
-
-        // If message contains any keyword in topic knowledge
-        if (nlpMatchTopic) {
-            console.log(`>>> returning NLP matched topic: ${nlpMatchTopic}`);
-            return await this.searchKnowledgeByTopic(nlpMatchTopic, 14);
-        }
-        
-        // Refer the highest between minhash and BPE
-        if (minHashHighestSimilarity.similarity > bpeHighestSimilarity.similarity) {
-            console.log(`>>> returning mishHash matched topic: ${minHashHighestSimilarity.topic}`);
-            return await this.searchKnowledgeByTopic(minHashHighestSimilarity.topic, minHashHighestSimilarity.similarity);
+        if (!this.vectorStore) {
+            logger.error('Vector store not initialized');
+            return null;
         }
 
-        console.log(`>>> returning BPE matched topic: ${bpeHighestSimilarity.topic}`);
-        return await this.searchKnowledgeByTopic(bpeHighestSimilarity.topic, bpeHighestSimilarity.similarity);
+        try {
+            // Use similarity search with scores
+            const results = await this.vectorStore.similaritySearchWithScore(text, 5);
+            
+            return results.map(([doc, score]) => ({
+                topic: doc.metadata.topic as string,
+                category: doc.metadata.category as string,
+                content: doc.pageContent,
+                similarity: 1 - score, // MemoryVectorStore uses distance, let's normalize to a "similarity" feel
+                metadata: doc.metadata
+            }));
+        } catch (error) {
+            logger.error('Error during similarity search:', error);
+            return null;
+        }
     }
 
-    public async searchKnowledgeByTopic(topic: string, similarity: number): Promise<SearchResult[] | null> {
+    public async searchKnowledgeByTopic(topic: string, similarity: number = 1.0): Promise<SearchResult[] | null> {
         try {
             const documents = await fs.promises.readFile(this.localStorePath, 'utf-8');
-            const jsonDocuments = JSON.parse(documents);
+            const jsonDocuments = JSON.parse(documents) as Knowledge[];
 
-            const matchedDoc = jsonDocuments.filter((doc: Knowledge) => doc.topic === topic);
-            if (!matchedDoc) {
-                logger.error(`No document found with topic: ${topic}`);
-                return null;
-            }
-
-            const results: SearchResult[] = matchedDoc.map((doc: Knowledge): SearchResult => {
-                return {
-                    topic: doc.topic,
-                    category: doc.category,
-                    content: doc.content,
-                    similarity: similarity,
-                    metadata: doc.metadata
-                };
-            });
-
-            return await results;
+            const matchedDocs = jsonDocuments.filter((doc: Knowledge) => doc.topic === topic);
+            
+            return matchedDocs.map((doc: Knowledge): SearchResult => ({
+                topic: doc.topic,
+                category: doc.category,
+                content: doc.content,
+                similarity: similarity,
+                metadata: doc.metadata
+            }));
         } catch (error) {
             logger.error('Failed to search knowledge by topic:', error);
-            throw error;
+            return null;
         }
     }
-
 }
