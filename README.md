@@ -7,7 +7,7 @@ A state-of-the-art healthcare chatbot server built with **LangGraph**, **Ollama*
 - **Ollama Powered**: Native support for `llama3` and `mxbai-embed-large` models.
 - **Modular LangChain**: Upgraded to the latest v0.3 modular ecosystem.
 - **Semantic RAG**: Higher quality knowledge retrieval compared to legacy keyword-based systems.
-- **Testing Standard**: Streamlined API testing with Jest and Axios.
+- **Testing Standard**: Streamlined API testing with Bun Test and Axios.
 
 ## 📊 Agent Workflow
 ```mermaid
@@ -29,7 +29,7 @@ graph TD
 ```
 
 ## 🛠️ Prerequisites
-- **Node.js**: v20 or later.
+- **Bun**: v1.1 or later.
 - **Ollama**: Installed and running locally.
 - **Models**: Pull required models before starting:
   ```bash
@@ -39,24 +39,19 @@ graph TD
 
 ## 📦 Installation
 ```bash
-# Set Node version
-nvm use 20
-
 # Install dependencies
-yarn install
+bun install
 ```
 
-## 🏃 Running the Server
-```bash
-# Build and start the server
-yarn start
+# Start the server
+bun start
 ```
 The server will be available at `http://localhost:5002`.
 
 ## ✅ Testing
-We use a streamlined Jest + Axios suite for verifying the API.
+We use a streamlined Bun Test + Axios suite for verifying the API.
 ```bash
-yarn test
+bun test
 ```
 
 ## 🧠 Architecture

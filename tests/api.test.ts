@@ -1,9 +1,7 @@
 import axios from "axios";
+import { describe, test, expect, beforeAll } from "bun:test";
 
 const BASE_URL = "http://localhost:5002";
-
-// Set a longer timeout for LLM generation
-jest.setTimeout(60000);
 
 describe("xcare-bot-agent API Tests", () => {
     let token: string;
@@ -46,7 +44,7 @@ describe("xcare-bot-agent API Tests", () => {
         // Check for the new debug metadata added for the Professional Evaluator
         expect(response.data.debug).toBeDefined();
         expect(response.data.debug.retrievalCount).toBeGreaterThanOrEqual(0);
-    });
+    }, 60000);
 
     test("POST /agent/generate - Unauthorized Request", async () => {
         try {
