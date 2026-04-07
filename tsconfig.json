@@ -1,18 +1,19 @@
 {
     "compilerOptions": {
         "target": "ES2020",
-        "module": "CommonJS",
-        "moduleResolution": "Node",
+        "module": "node20",
+        "moduleResolution": "nodenext",
         "resolveJsonModule": true,
         "allowJs": true,
         "outDir": "./dist",
-        "rootDir": "./src",
+        "rootDir": "./",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
+        "ignoreDeprecations": "5.0",
         "types": ["bun-types"]
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/**/*.ts", "tests/**/*.ts"],
     "exclude": ["node_modules"]
 }

@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  fullname  String
+  username  String   @unique
+  password  String
+  gender    String
+  age       String
+  email     String
+  user_type String
+  tickets   Ticket[]
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  createdBy   String?
+  createdDate DateTime @default(now())
+  status      String
+  email       String?
+  User        User?    @relation(fields: [createdBy], references: [username])
+}
+
+model Analytic {
+  id           Int      @id @default(autoincrement())
+  userMessage  String
+  botMessage   String
+  vote         String
+  evalMetadata Json?
+  createdAt    DateTime @default(now())
+}
+
+model Monitoring {
+  id                Int      @id @default(autoincrement())
+  userMessage       String
+  botMessage        String
+  isManIntervention Boolean
+  evalMetadata      Json?
+  createdAt         DateTime @default(now())
+}
+
+model KnowledgeRule {
+  id                Int      @id @default(autoincrement())
+  topic             String
+  category          String
+  content           String   
+  strictAnswer      String?  
+  isManIntervention Boolean  @default(false)
+  nextTopic         String?
+  metadata          Json?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model KnowledgeEmbedding {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text      String
+  metadata  Json
+  embedding Unsupported("vector(1024)")?
+
+  @@map("knowledge_embeddings")
+}

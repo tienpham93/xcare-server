@@ -7,58 +7,64 @@ import { logger } from "../../utils/logger";
 
 /**
  * Define the state for the LangGraph agent.
- * This state is passed between nodes and updated along the way.
  */
 export const AgentState = Annotation.Root({
-  /** The user's input question */
   question: Annotation<string>,
-  /** History of the conversation */
   history: Annotation<BaseMessage[]>,
-  /** Retrieved documents from the knowledge base */
   documents: Annotation<SearchResult[]>,
-  /** The generated response from the LLM */
   generation: Annotation<string>,
-  /** Metadata for automated evaluation and tracking */
   evalMetadata: Annotation<Record<string, any>>,
-  /** The username of the user */
   username: Annotation<string>,
-  /** The type of message (general, submit, etc.) */
   messageType: Annotation<string>,
+  // Whether the web search fallback was triggered
+  usedWebSearch: Annotation<boolean>,
 });
 
 /**
  * Node: Retrieval
- * Searches the knowledge base for relevant documents based on the question.
+ * Searches the PGVector knowledge base for relevant documents.
  */
 const retrieveNode = async (state: typeof AgentState.State) => {
   logger.info(`--- RETRIEVING for: ${state.question} ---`);
   const knowledgeBase = KnowledgeBase.getInstance();
   const results = await knowledgeBase.searchRelevant(state.question);
 
+  const topScore = results?.[0]?.similarity || 0;
+
   return {
     documents: results || [],
     evalMetadata: {
       retrievalCount: results?.length || 0,
-      topScore: results?.[0]?.similarity || 0,
+      topScore,
     }
   };
 };
 
 /**
  * Node: Generation
- * Calls the LLM to generate a response based on the retrieved documents.
+ * Calls the LLM to generate a response based on retrieved documents.
+ * Integrates Hybrid logic: If a strictAnswer is found in the rules, bypass LLM.
  */
 const generateNode = async (state: typeof AgentState.State, config?: any) => {
   logger.info(`--- GENERATING response ---`);
-  const { question, documents, username, messageType } = state;
-  const llm = config.configurable.llm as ChatOllama;
+  const { question, documents, username } = state;
 
-  // We use the OllamaService indirectly or just call the LLM here directly for cleaner graph logic
-  // For now, let's assume the prompt generation logic from promptFactory is used
-  // Or we can implement a more "LangChain-native" prompt here
-  
-  // Integrating the existing promptGenerator logic
-  const { ollamaService } = await import("../../server");
+  // 1. Check for Strict Rule (Deterministic Path)
+  const strictDoc = documents.find(d => d.metadata?.strictAnswer);
+  if (strictDoc && strictDoc.metadata) {
+    logger.info(`--- DETERMINISTIC Answer triggered for: ${strictDoc.topic} ---`);
+    return {
+      generation: strictDoc.metadata.strictAnswer!,
+      evalMetadata: {
+        ...state.evalMetadata,
+        isDeterministic: true,
+        ruleId: strictDoc.metadata.ruleId,
+      }
+    };
+  }
+
+  // 2. Dynamic LLM Generation (Semantic Path)
+  const { ollamaService } = await import("../../server.js");
   const result = await ollamaService.generate(username, question, documents);
 
   return {
@@ -66,6 +72,8 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     evalMetadata: {
       ...state.evalMetadata,
       llmResponseLength: result.response.length,
+      usedWebSearch: state.usedWebSearch || false,
+      isDeterministic: false,
     }
   };
 };
@@ -77,10 +85,10 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
 const submitNode = async (state: typeof AgentState.State, config?: any) => {
   logger.info(`--- SUBMITTING TICKET ---`);
   const { question, username } = state;
-  const { ollamaService } = await import("../../server");
-  
+  const { ollamaService } = await import("../../server.js");
+
   const result = await ollamaService.submitTicket(username, question);
-  
+
   return {
     generation: result.response,
     evalMetadata: {
@@ -92,7 +100,7 @@ const submitNode = async (state: typeof AgentState.State, config?: any) => {
 
 /**
  * Node: Analysis / Audit
- * Analyzes the response for auditing and sets "Human Intervention" if needed.
+ * Analyzes the response for auditing and flags for Human Intervention if needed.
  */
 const analyzeNode = async (state: typeof AgentState.State) => {
   logger.info(`--- ANALYZING response ---`);
@@ -108,14 +116,52 @@ const analyzeNode = async (state: typeof AgentState.State) => {
   };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// [DRAFT] Web Search Node
+// This node is scaffolded for future A/B testing integration.
+// To enable: uncomment internals, install a web search library (e.g. Tavily),
+// and wire the conditional edge below.
+// ─────────────────────────────────────────────────────────────────────────────
+const webSearchNode = async (state: typeof AgentState.State) => {
+  logger.info(`--- [DRAFT] WEB SEARCH triggered for: ${state.question} ---`);
+
+  // TODO: Enable this block when integrating web search for A/B testing
+  // -----------------------------------------------------------------------
+  // import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+  // const searchTool = new TavilySearchResults({ maxResults: 3 });
+  // const webResults = await searchTool.invoke(state.question);
+  // const webDocs: SearchResult[] = JSON.parse(webResults).map((r: any) => ({
+  //   topic: 'web_search',
+  //   category: 'external',
+  //   content: r.content,
+  //   similarity: 0.5,
+  //   metadata: { source: r.url }
+  // }));
+  // return { documents: [...state.documents, ...webDocs], usedWebSearch: true };
+  // -----------------------------------------------------------------------
+
+  // Passthrough until enabled
+  return { usedWebSearch: false };
+};
+
 /**
  * Conditional logic: Route based on message type.
  */
-const routeByMessageType = (state: typeof AgentState.State) => {
-  if (state.messageType === "submit") {
-    return "submit";
-  }
+const routeByMessageType = (state: typeof AgentState.State): string => {
+  if (state.messageType === "submit") return "submit";
   return "generate";
+};
+
+/**
+ * Conditional logic: Optionally trigger web search if retrieval confidence is low.
+ * Currently passes through directly to generate/submit. 
+ * Flip the condition (e.g. topScore < 0.4) to activate web search fallback.
+ */
+const routeAfterRetrieval = (state: typeof AgentState.State): string => {
+  // [DRAFT] Uncomment to activate web search fallback:
+  // const topScore = state.evalMetadata?.topScore || 0;
+  // if (topScore < 0.4 && state.messageType !== "submit") return "web_search";
+  return routeByMessageType(state);
 };
 
 // Build the Graph with Conditional Routing
@@ -125,7 +171,7 @@ const workflow = new StateGraph(AgentState)
   .addNode("submit", submitNode)
   .addNode("analyze", analyzeNode)
   .addEdge(START, "retrieve")
-  .addConditionalEdges("retrieve", routeByMessageType, {
+  .addConditionalEdges("retrieve", routeAfterRetrieval, {
     submit: "submit",
     generate: "generate",
   })

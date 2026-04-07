@@ -95,6 +95,7 @@ export interface SearchResult {
         strictAnswer?: string;
         nextTopic?: string;
         isManIntervention?: boolean;
+        ruleId?: number;
     };
 }
 

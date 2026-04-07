@@ -1,28 +1,26 @@
-import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
 import { User, UserCredential } from '../types';
-import path from 'path';
+import prisma from './prismaClient';
 
 export class AuthService {
     private username: string;
     private password: string;
     private readonly jwtSecret = '11223355';
-    private readonly jsonFilePath = path.join(process.cwd(), 'src/data/userData.json');
 
     constructor(username?: string, password?: string) {
         this.username = username || '';
         this.password = password || '';
     }
 
-    private isValidCredential(): boolean {
-        const data = fs.readFileSync(this.jsonFilePath, 'utf8');
-        const users: User[] = JSON.parse(data);
-
-        return users.some(user => user.credentials.username === this.username && user.credentials.password === this.password);
+    private async isValidCredential(): Promise<boolean> {
+        const user = await prisma.user.findUnique({
+            where: { username: this.username },
+        });
+        return !!user && user.password === this.password;
     }
 
-    public createJwtToken(): string | null {
-        if (this.isValidCredential()) {
+    public async createJwtToken(): Promise<string | null> {
+        if (await this.isValidCredential()) {
             const payload = { username: this.username };
             return jwt.sign(payload, this.jwtSecret, { expiresIn: '15m' });
         }
@@ -30,13 +28,11 @@ export class AuthService {
     }
 
     public verifyJwtToken(token: string): boolean {
-        if(!token) {
-            return false;
-        }
+        if (!token) return false;
         try {
             jwt.verify(token, this.jwtSecret);
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -46,22 +42,27 @@ export class AuthService {
         return this.verifyJwtToken(bearerToken);
     }
 
-    public getUserDataAndToken() {
-        const data = fs.readFileSync(this.jsonFilePath, 'utf8');
-        const users: User[] = JSON.parse(data);
+    public async getUserDataAndToken(): Promise<{ token: string | null; userMetadata: Omit<User, 'credentials'> }> {
+        const dbUser = await prisma.user.findUnique({
+            where: { username: this.username },
+        });
 
-        const userData = users.find(user => user.username === this.username);
-        if (userData) {
-            userData.credentials = {} as UserCredential;
-        } else {
+        if (!dbUser) {
             throw new Error('User not found');
         }
 
-        const token = this.createJwtToken();
-        return {
-            token: token,
-            userMetadata: userData,
-        }
-    }
+        // Map DB result to User type, omitting credentials
+        const userMetadata: Omit<User, 'credentials'> = {
+            id: String(dbUser.id),
+            fullname: dbUser.fullname,
+            username: dbUser.username,
+            gender: dbUser.gender,
+            age: dbUser.age,
+            email: dbUser.email,
+            user_type: dbUser.user_type,
+        };
 
+        const token = await this.createJwtToken();
+        return { token, userMetadata };
+    }
 }

@@ -1,9 +1,8 @@
 import { AuthService } from "../services/authService";
 import { Request, Response } from 'express';
 import { logger } from "../utils/logger";
-import * as fs from 'fs';
-import path from "path";
 import { UserCredential } from "../types";
+import prisma from "../services/prismaClient";
 
 export const postLoginHandler = async (req: Request, res: Response): Promise<void> => {
     const { username, password } = req.body;
@@ -20,49 +19,43 @@ export const postLoginHandler = async (req: Request, res: Response): Promise<voi
 export const getUserHandler = async (req: Request, res: Response): Promise<void> => {
     const { username } = req.query;
     try {
-        const data = fs.readFileSync(path.join(process.cwd(), 'src/data/userData.json'), 'utf8');
+        const dbUser = await prisma.user.findUnique({
+            where: { username: username as string },
+        });
 
-        const users = JSON.parse(data);
-        const userData = await users.find((user: any) => user.username === username);
-    
-        if (userData) {
-            userData.credentials = {} as UserCredential;
-        } else {
-            throw new Error('User not found');
+        if (!dbUser) {
+            res.status(404).json({ error: 'User not found' });
+            return;
         }
-        res.json(userData);
+
+        // Strip password from response
+        const { password, ...userMetadata } = dbUser;
+        res.json({ ...userMetadata, credentials: {} as UserCredential });
     } catch (error) {
+        logger.error('getUserHandler error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 };
 
 export const getTicketsHandler = async (req: Request, res: Response): Promise<void> => {
-    // Verify Auth Token
     const authService = new AuthService();
     const authToken = req.headers.authorization;
-
-    // Get createdBy from query
     const { createdBy } = req.query;
 
-    if (authToken) {
-        if (!authService.verifyTokenFromHeader(authToken)) {
-            logger.error('Unauthorized request');
-            res.status(401).json({ error: 'Unauthorized request' });
-            return;
-        }
-    } else {
+    if (!authToken || !authService.verifyTokenFromHeader(authToken)) {
         logger.error('Unauthorized request');
         res.status(401).json({ error: 'Unauthorized request' });
         return;
     }
 
     try {
-        // Get ticket form json file
-        const data = fs.readFileSync(path.join(process.cwd(), 'src/data/ticketsData.json'), 'utf8');
-        const tickets = JSON.parse(data);
-        const ticketByUser = tickets.filter((ticket: any) => ticket.createdBy === createdBy);
-        res.json(ticketByUser);
+        const tickets = await prisma.ticket.findMany({
+            where: { createdBy: createdBy as string },
+            orderBy: { createdDate: 'desc' },
+        });
+        res.json(tickets);
     } catch (error) {
+        logger.error('getTicketsHandler error:', error);
         res.status(404).json({ error: 'Tickets not found' });
     }
 };
@@ -71,20 +64,18 @@ export const postTicketHandler = async (req: Request, res: Response): Promise<vo
     const { title, content, createdBy, email } = req.body;
 
     try {
-        const data = fs.readFileSync(path.join(process.cwd(), 'src/data/ticketsData.json'), 'utf8');
-        const tickets = await JSON.parse(data);
-        const newTicket = {
-            id: tickets.length + 1,
-            title,
-            content,
-            createdBy,
-            email,
-            status: 'Open'
-        };
-        await tickets.push(newTicket);
-        fs.writeFileSync(path.join(process.cwd(), 'src/data/ticketsData.json'), JSON.stringify(await tickets, null, 2));
+        const newTicket = await prisma.ticket.create({
+            data: {
+                title,
+                content,
+                createdBy,
+                email,
+                status: 'Open',
+            },
+        });
         res.json(newTicket);
     } catch (error) {
+        logger.error('postTicketHandler error:', error);
         res.status(500).json({ error: 'Failed to create ticket' });
     }
 };
@@ -92,20 +83,17 @@ export const postTicketHandler = async (req: Request, res: Response): Promise<vo
 export const postAnalyticHandler = async (req: Request, res: Response): Promise<void> => {
     const { conversation, vote, evalMetadata } = req.body;
     try {
-        const data = fs.readFileSync(path.join(process.cwd(), 'src/data/analyticData.json'), 'utf8');
-        const voteData = await JSON.parse(data);
-        const newVote = {
-            conversation: {
-                user: conversation.user,
-                bot: conversation.bot
+        const newVote = await prisma.analytic.create({
+            data: {
+                userMessage: conversation.user,
+                botMessage: conversation.bot,
+                vote: vote,
+                evalMetadata: evalMetadata ?? {},
             },
-            vote: vote,
-            evalMetadata: evalMetadata
-        };
-        await voteData.push(newVote);
-        fs.writeFileSync(path.join(process.cwd(), 'src/data/analyticData.json'), JSON.stringify(await voteData, null, 2));
+        });
         res.json(newVote);
     } catch (error) {
+        logger.error('postAnalyticHandler error:', error);
         res.status(500).json({ error: 'Failed to save vote data' });
     }
 };
@@ -114,20 +102,17 @@ export const postMonitoringHandler = async (req: Request, res: Response): Promis
     const { conversation, isManIntervention, evalMetadata } = req.body;
 
     try {
-        const data = fs.readFileSync(path.join(process.cwd(), 'src/data/monitoringData.json'), 'utf8');
-        const monitorData = await JSON.parse(data);
-        const newMonitorData = {
-            conversation: {
-                user: conversation.user,
-                bot: conversation.bot
+        const newMonitorData = await prisma.monitoring.create({
+            data: {
+                userMessage: conversation.user,
+                botMessage: conversation.bot,
+                isManIntervention: isManIntervention,
+                evalMetadata: evalMetadata ?? {},
             },
-            isManIntervention: isManIntervention,
-            evalMetadata: evalMetadata
-        };
-        await monitorData.push(newMonitorData);
-        fs.writeFileSync(path.join(process.cwd(), 'src/data/monitoringData.json'), JSON.stringify(await monitorData, null, 2));
+        });
         res.json(newMonitorData);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to save vote data' });
+        logger.error('postMonitoringHandler error:', error);
+        res.status(500).json({ error: 'Failed to save monitoring data' });
     }
 };

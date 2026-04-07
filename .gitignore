@@ -19,7 +19,7 @@
 # Ignore system files
 .DS_Store
 Thumbs.db
-.faiss_store
+.env
 .github
 internalData_store
 answer_store
@@ -32,3 +32,5 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 test-results
+
+/src/generated/prisma

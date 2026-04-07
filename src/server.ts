@@ -21,9 +21,17 @@ app.use(express.json());
 (async () => {
     try {
         await ollamaService.initialize();
-        await knowledgeBase.initializeKnowledgeBase('./src/knowledge');
 
-        logger.info('The Agent initialized successfully (Ollama + LangChain RAG)');
+        // On normal startup, connect to the existing PGVector store (fast).
+        // Set REINITIALIZE_KB=true in .env to force a full re-ingest of knowledge docs.
+        if (process.env.REINITIALIZE_KB === 'true') {
+            logger.info('REINITIALIZE_KB flag detected — re-ingesting knowledge base...');
+            await knowledgeBase.initializeKnowledgeBase('./src/knowledge');
+        } else {
+            await knowledgeBase.connectToExistingStore();
+        }
+
+        logger.info('The Agent initialized successfully (Ollama + PGVector RAG)');
     } catch (error) {
         logger.error('Failed to initialize the Agent:', error);
         process.exit(1);
