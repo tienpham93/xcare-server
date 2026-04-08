@@ -114,6 +114,29 @@ The server provides a comprehensive set of REST APIs for chat generation, auth, 
 
 The system uses a two-tier retrieval strategy:
 
+```mermaid
+graph TD
+    A[User Request] --> B{Retrieve Knowledge}
+    
+    subgraph "Hybrid Retrieval Service"
+        B --> C[Path 1: Deterministic Rules<br/><i>PostgreSQL Relational</i>]
+        B --> D[Path 2: Semantic RAG<br/><i>pgvector Embeddings</i>]
+    
+        C --> E{Rule Match?}
+        D --> F{Similarity Score > 0.4?}
+    end
+    
+    E -- Yes --> G[Strict Answer Bypass]
+    E -- No --> D
+    
+    F -- Yes --> H[LLM Generation<br/><i>llama3 + Context</i>]
+    F -- No --> J[General LLM<br/><i>Baseline Knowledge</i>]
+    
+    G --> K[Final Bot Response]
+    H --> K
+    J --> K
+```
+
 1. **Deterministic Path (Rules)**: High-stakes or strict-workflow queries (e.g., "Emergency", "SOS") match records in the `KnowledgeRule` table. If a match is found, a `strictAnswer` is returned immediately, bypassing the LLM for 100% predictability.
 2. **Semantic Path (Vector)**: General queries use `pgvector` similarity search to find relevant context chunked by `RecursiveCharacterTextSplitter`, which is then passed to the LLM for response generation.
 

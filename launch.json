@@ -1,16 +1,20 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Debug Playwright Tests",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/node_modules/@playwright/test/lib/cli.js",
-        "args": ["test", "--project=chromium", "--headed"],
-        "cwd": "${workspaceFolder}",
-        "console": "integratedTerminal",
-        "internalConsoleOptions": "neverOpen",
-        "skipFiles": ["<node_internals>/**"]
-      }
-    ]
-  }
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug Server (Bun)",
+      "program": "${workspaceFolder}/src/server.ts",
+      "watch": true,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug Tests (Bun)",
+      "program": "${workspaceFolder}/tests/api.test.ts",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
