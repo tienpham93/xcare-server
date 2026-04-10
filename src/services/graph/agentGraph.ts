@@ -16,18 +16,64 @@ export const AgentState = Annotation.Root({
   evalMetadata: Annotation<Record<string, any>>,
   username: Annotation<string>,
   messageType: Annotation<string>,
+  intent: Annotation<string>,
+  domains: Annotation<string[]>,
+  contextStatus: Annotation<"SUFFICIENT" | "INSUFFICIENT">,
   // Whether the web search fallback was triggered
   usedWebSearch: Annotation<boolean>,
 });
+
+const routerNode = async (state: typeof AgentState.State) => {
+  const query = state.question.toLowerCase().trim().replace(/[?!.]/g, '');
+  const commonGreetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'hi there', 'hello there'];
+
+  // Fast-path 1: Frontend explicitly signals ticket submission
+  if (state.messageType === "submit") {
+    logger.info(`--- FAST-PATH: Frontend declared messageType=submit ---`);
+    return {
+      intent: "TICKET",
+      domains: [],
+      evalMetadata: { intentReasoning: "Frontend declared ticket submission" }
+    };
+  }
+
+  // Fast-path 2: Common greeting bypass
+  if (commonGreetings.includes(query)) {
+    logger.info(`--- FAST-PATH: Detected common greeting: ${query} ---`);
+    return {
+      intent: "CHAT",
+      domains: [],
+      evalMetadata: { intentReasoning: "Fast-path greeting detection" }
+    };
+  }
+
+  logger.info(`--- CLASSIFYING intent for: ${state.question} ---`);
+  const { ollamaService } = await import("../../server.js");
+  
+  const result = await ollamaService.classifyIntent(state.question);
+  
+  return {
+    intent: result.intent,
+    domains: result.domains,
+    evalMetadata: {
+        intentReasoning: result.reasoning
+    }
+  };
+};
 
 /**
  * Node: Retrieval
  * Searches the PGVector knowledge base for relevant documents.
  */
 const retrieveNode = async (state: typeof AgentState.State) => {
-  logger.info(`--- RETRIEVING for: ${state.question} ---`);
+  if (state.intent === "CHAT") {
+    logger.info("--- SKIPPING retrieval for general chat ---");
+    return { documents: [] };
+  }
+
+  logger.info(`--- RETRIEVING for: ${state.question} (Domains: ${state.domains.join(", ")}) ---`);
   const knowledgeBase = KnowledgeBase.getInstance();
-  const results = await knowledgeBase.searchRelevant(state.question);
+  const results = await knowledgeBase.searchRelevant(state.question, state.domains);
 
   const topScore = results?.[0]?.similarity || 0;
 
@@ -41,40 +87,88 @@ const retrieveNode = async (state: typeof AgentState.State) => {
 };
 
 /**
- * Node: Generation
- * Calls the LLM to generate a response based on retrieved documents.
- * Integrates Hybrid logic: If a strictAnswer is found in the rules, bypass LLM.
+ * Node: Ranker
+ * Assesses the relevance and sufficiency of retrieved documents.
  */
-const generateNode = async (state: typeof AgentState.State, config?: any) => {
-  logger.info(`--- GENERATING response ---`);
-  const { question, documents, username } = state;
+const rankerNode = async (state: typeof AgentState.State) => {
+  if (state.documents.length === 0) {
+    return { contextStatus: "INSUFFICIENT" as const };
+  }
 
-  // 1. Check for Strict Rule (Deterministic Path)
-  const strictDoc = documents.find(d => d.metadata?.strictAnswer);
-  if (strictDoc && strictDoc.metadata) {
-    logger.info(`--- DETERMINISTIC Answer triggered for: ${strictDoc.topic} ---`);
-    return {
-      generation: strictDoc.metadata.strictAnswer!,
-      evalMetadata: {
+  logger.info("--- RANKING retrieved documents ---");
+  const { ollamaService } = await import("../../server.js");
+  
+  // For now, we assess the top document (can be expanded to batch)
+  const topDoc = state.documents[0];
+  const assessment = await ollamaService.assessContext(state.question, topDoc);
+  
+  logger.info(`Context Assessment: ${assessment.context_sufficiency} (Score: ${assessment.relevance_score})`);
+
+  return {
+    contextStatus: assessment.context_sufficiency,
+    evalMetadata: {
         ...state.evalMetadata,
-        isDeterministic: true,
-        ruleId: strictDoc.metadata.ruleId,
-      }
+        relevanceScore: assessment.relevance_score,
+        rankingReasoning: assessment.reasoning
+    }
+  };
+};
+
+const generateNode = async (state: typeof AgentState.State, config?: any) => {
+  const { question, documents, username, contextStatus, intent } = state;
+  const { ollamaService } = await import("../../server.js");
+
+  // 1. Path A: Intent is CHAT -> Skip RAG and Rules, just respond
+  if (intent === "CHAT") {
+    logger.info(`--- HANDLING simple chat/greeting ---`);
+    const result = await ollamaService.generate(username, question, [], intent);
+    return {
+      generation: result.response,
+      evalMetadata: { ...state.evalMetadata, isChat: true, isDeterministic: false }
     };
   }
 
-  // 2. Dynamic LLM Generation (Semantic Path)
-  const { ollamaService } = await import("../../server.js");
-  const result = await ollamaService.generate(username, question, documents);
+  // 2. Path B: Sufficient Context -> RAG Generation
+  if (contextStatus === "SUFFICIENT") {
+    logger.info(`--- GENERATING RAG response ---`);
+    
+    // Check for Priority Strict Rule (Pre-generation bypass)
+    const strictDoc = documents.find(d => d.metadata?.strictAnswer && (d.similarity || 0) >= 0.95);
+    if (strictDoc && strictDoc.metadata) {
+      logger.info(`--- DETERMINISTIC Answer triggered for: ${strictDoc.title} ---`);
+      return {
+        generation: strictDoc.metadata.strictAnswer!,
+        evalMetadata: { ...state.evalMetadata, isDeterministic: true, ruleId: strictDoc.metadata.ruleId }
+      };
+    }
 
+    const result = await ollamaService.generate(username, question, documents, intent);
+    return {
+      generation: result.response,
+      evalMetadata: { ...state.evalMetadata, llmResponseLength: result.response.length, isDeterministic: false }
+    };
+  }
+
+  // 3. Path C: Insufficient Context -> Fallback to Rules (e.g. Technician Handover)
+  logger.info(`--- CONTEXT INSUFFICIENT for medical query, checking for fallback rules ---`);
+  const knowledgeBase = KnowledgeBase.getInstance();
+  const fallbacks = await knowledgeBase.searchRelevant(question);
+  const strictFallback = fallbacks?.find(d => d.metadata?.strictAnswer);
+
+  if (strictFallback && strictFallback.metadata) {
+    logger.info(`--- FALLBACK RULE triggered: ${strictFallback.title} ---`);
+    return {
+      generation: strictFallback.metadata.strictAnswer!,
+      evalMetadata: { ...state.evalMetadata, isDeterministic: true, isFallback: true }
+    };
+  }
+
+  // 4. Path D: No Rules -> General LLM Knowledge
+  logger.info(`--- NO RULES found, using general LLM knowledge ---`);
+  const result = await ollamaService.generate(username, question, [], intent);
   return {
     generation: result.response,
-    evalMetadata: {
-      ...state.evalMetadata,
-      llmResponseLength: result.response.length,
-      usedWebSearch: state.usedWebSearch || false,
-      isDeterministic: false,
-    }
+    evalMetadata: { ...state.evalMetadata, usedGeneralKnowledge: true, isDeterministic: false }
   };
 };
 
@@ -104,7 +198,7 @@ const submitNode = async (state: typeof AgentState.State, config?: any) => {
  */
 const analyzeNode = async (state: typeof AgentState.State) => {
   logger.info(`--- ANALYZING response ---`);
-  const isManIntervention = state.documents.some(d => d.metadata?.isManIntervention);
+  const isManIntervention = state.documents.some(d => d.metadata?.isManIntervention) || state.contextStatus === "INSUFFICIENT";
 
   return {
     evalMetadata: {
@@ -116,62 +210,39 @@ const analyzeNode = async (state: typeof AgentState.State) => {
   };
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// [DRAFT] Web Search Node
-// This node is scaffolded for future A/B testing integration.
-// To enable: uncomment internals, install a web search library (e.g. Tavily),
-// and wire the conditional edge below.
-// ─────────────────────────────────────────────────────────────────────────────
-const webSearchNode = async (state: typeof AgentState.State) => {
-  logger.info(`--- [DRAFT] WEB SEARCH triggered for: ${state.question} ---`);
-
-  // TODO: Enable this block when integrating web search for A/B testing
-  // -----------------------------------------------------------------------
-  // import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
-  // const searchTool = new TavilySearchResults({ maxResults: 3 });
-  // const webResults = await searchTool.invoke(state.question);
-  // const webDocs: SearchResult[] = JSON.parse(webResults).map((r: any) => ({
-  //   topic: 'web_search',
-  //   category: 'external',
-  //   content: r.content,
-  //   similarity: 0.5,
-  //   metadata: { source: r.url }
-  // }));
-  // return { documents: [...state.documents, ...webDocs], usedWebSearch: true };
-  // -----------------------------------------------------------------------
-
-  // Passthrough until enabled
-  return { usedWebSearch: false };
+/**
+ * Conditional logic: Route after router based on intent.
+ */
+const routeAfterRouter = (state: typeof AgentState.State): string => {
+  if (state.intent === "CHAT") return "generate";
+  return "retrieve";
 };
 
 /**
- * Conditional logic: Route based on message type.
+ * Conditional logic: Route after ranker based on intent.
  */
-const routeByMessageType = (state: typeof AgentState.State): string => {
-  if (state.messageType === "submit") return "submit";
+const routeByIntent = (state: typeof AgentState.State): string => {
+  if (state.intent === "TICKET") return "submit";
   return "generate";
 };
 
-/**
- * Conditional logic: Optionally trigger web search if retrieval confidence is low.
- * Currently passes through directly to generate/submit. 
- * Flip the condition (e.g. topScore < 0.4) to activate web search fallback.
- */
-const routeAfterRetrieval = (state: typeof AgentState.State): string => {
-  // [DRAFT] Uncomment to activate web search fallback:
-  // const topScore = state.evalMetadata?.topScore || 0;
-  // if (topScore < 0.4 && state.messageType !== "submit") return "web_search";
-  return routeByMessageType(state);
-};
-
-// Build the Graph with Conditional Routing
+// Build the Graph with Multi-Stage Routing
 const workflow = new StateGraph(AgentState)
+  .addNode("router", routerNode)
   .addNode("retrieve", retrieveNode)
+  .addNode("ranker", rankerNode)
   .addNode("generate", generateNode)
   .addNode("submit", submitNode)
   .addNode("analyze", analyzeNode)
-  .addEdge(START, "retrieve")
-  .addConditionalEdges("retrieve", routeAfterRetrieval, {
+
+  // Edge Flow
+  .addEdge(START, "router")
+  .addConditionalEdges("router", routeAfterRouter, {
+    generate: "generate",
+    retrieve: "retrieve"
+  })
+  .addEdge("retrieve", "ranker")
+  .addConditionalEdges("ranker", routeByIntent, {
     submit: "submit",
     generate: "generate",
   })

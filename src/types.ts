@@ -77,26 +77,21 @@ export interface ConversationContext {
 }
 
 export interface Knowledge {
-    topic: string;
+    documentId: string;
+    title: string;
+    domain: string;
     content: string;
-    category: string;
     embedding?: number[];
-    metadata?: {
-        strictAnswer?: string;
-    }
+    metadata?: any;
 }
 
 export interface SearchResult {
-    topic: string;
-    category: string;
+    documentId: string;
+    title: string;
+    domain: string;
     content: string;
     similarity: number;
-    metadata?: {
-        strictAnswer?: string;
-        nextTopic?: string;
-        isManIntervention?: boolean;
-        ruleId?: number;
-    };
+    metadata?: any;
 }
 
 export interface User {

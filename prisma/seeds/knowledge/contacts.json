@@ -1,34 +1,27 @@
 [
     {
-        "topic": "contacts",
-        "category": "keywords",
-        "content": "email, emails, @, .com, .vn, phone, hotline, contact, contacts, address, location, map, direction, directions, working hours, number, our website",
-        "metadata": {}
-    },
-    {
-        "topic": "contacts",
-        "category": "infos",
-        "content": "Connect to online doctors through XCare hotline 1900 1234",
+        "documentId": "contact-001",
+        "title": "Online Doctors and Appointments",
+        "domain": "contacts",
+        "content": "To connect to online doctors, patients can use the XCare hotline at 1900 1234. For any inquiries regarding our services, working hours, or to review available medical packages, please visit our official website at www.xcare.com.",
         "metadata": {
-            "nextTopic": "billing"
+            "suggested_actions": [
+                { "label": "View Billing Info", "targetDomain": "billing" }
+            ]
         }
     },
     {
-        "topic": "contacts",
-        "category": "infos",
-        "content": "email feedback@hotmail.com when reporting bad services, unfriendly staff, long wait...etc",
+        "documentId": "contact-002",
+        "title": "Feedback and Complaints",
+        "domain": "contacts",
+        "content": "To report bad services, unfriendly staff, long wait times, or to provide general feedback, please send an email to feedback@hotmail.com.",
         "metadata": {}
     },
     {
-        "topic": "contacts",
-        "category": "infos",
-        "content": "location 1: 123 Norway District 1 Saigon City, location 2: 222 Norway District 2, Saigon City, location 3: 321 Norway District 3, Saigon City",
-        "metadata": {}
-    },
-    {
-        "topic": "contacts",
-        "category": "infos",
-        "content": "Can review all services and packages at our website www.xcare.com",
+        "documentId": "contact-003",
+        "title": "Hospital Locations",
+        "domain": "contacts",
+        "content": "XCare has multiple physical locations. Location 1 is at 123 Norway District 1, Saigon City. Location 2 is at 222 Norway District 2, Saigon City. Location 3 is at 321 Norway District 3, Saigon City.",
         "metadata": {}
     }
 ]

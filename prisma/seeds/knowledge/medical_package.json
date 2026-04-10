@@ -1,60 +1,20 @@
 [
     {
-        "topic": "medical_package",
-        "category": "keywords",
-        "content": "medical, package, patients, age, older, younger, Adolescent Package, Under30 Package, Middle Age Package, Senior Package, Premium Package",
-        "metadata": {}
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Patients are below 20 years old can buy Adolescent Package",
+        "documentId": "med-pkg-001",
+        "title": "Medical Packages by Age Demographic",
+        "domain": "medical_package",
+        "content": "XCare offers a variety of medical packages tailored to different age groups and demographics. Patients below 20 years old can purchase the Adolescent Package. Patients from 20 to 30 years old can purchase the Under30 Package. Patients from 31 to 45 years old can purchase the Middle Age Package. Patients above 45 years old can purchase the Senior Package. Additionally, female patients above 45 years old are eligible to purchase the Premium Package.",
         "metadata": {
-            "nextTopic": "billing"
+            "suggested_actions": [
+                { "label": "View Package Pricing", "targetDomain": "billing" }
+            ]
         }
     },
     {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Patients are from 20 to 30 years can buy Under30 Package",
-        "metadata": {
-            "nextTopic": "billing"
-        }
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Patients are from 31 to 45 years can buy Middle Age Package",
-        "metadata": {
-            "nextTopic": "billing"
-        }
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Patients are above 45 years old can buy Senior Package",
-        "metadata": {
-            "nextTopic": "billing"
-        }
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Patients are females and above 45 years old can buy Premium Package",
-        "metadata": {
-            "nextTopic": "billing"
-        }
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Adolescent Package, Under30 Package, Middle Age Package, Senior Package, Premium Package are same price as $1000",
-        "metadata": {}
-    },
-    {
-        "topic": "medical_package",
-        "category": "infos",
-        "content": "Can review all packages at our website www.xcare.com",
+        "documentId": "med-pkg-002",
+        "title": "Medical Packages Pricing",
+        "domain": "medical_package",
+        "content": "All of our medical packages including the Adolescent Package, Under30 Package, Middle Age Package, Senior Package, and Premium Package are priced the same at $1000. For more details, patients can review all packages at our website www.xcare.com.",
         "metadata": {}
     }
 ]

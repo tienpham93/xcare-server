@@ -1,32 +1,30 @@
 [
     {
-        "topic": "diets",
-        "category": "keywords",
-        "content": "Obesity, Diabetes, Gout, cholesterol, sugar, alcohol, milk, high-fat, beef, seafood, animal, proteins, chicken, fish, egg, vegetable",
+        "documentId": "diet-001",
+        "title": "Diet for Obesity Management",
+        "domain": "diets",
+        "content": "For obesity management, patients should aim to consume less than 200 milligrams (mg) of cholesterol a day. Dietary choices should limit high-fat foods, sugar, and alcohol.",
         "metadata": {}
     },
     {
-        "topic": "diets",
-        "category": "infos",
-        "content": "Obesity Patients should aim for less than 200 milligrams (mg) of cholesterol a day",
+        "documentId": "diet-002",
+        "title": "Diet for Diabetes Management",
+        "domain": "diets",
+        "content": "For diabetes management, patients should strictly avoid high-fat dairy products (like whole milk) and high sugary foods.",
         "metadata": {}
     },
     {
-        "topic": "diets",
-        "category": "infos",
-        "content": "Diabetes Patients should avoid high-fat dairy products and high sugary foods",
+        "documentId": "diet-003",
+        "title": "Diet for Gout Management",
+        "domain": "diets",
+        "content": "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins (like chicken or fish in excess). These foods contribute to high blood levels of uric acid which can trigger gout attacks.",
         "metadata": {}
     },
     {
-        "topic": "diets",
-        "category": "infos",
-        "content": "Gout Patients should avoid red meats such as beef, seafood, and animal proteins which contribute to high blood levels of uric acid",
-        "metadata": {}
-    },
-    {
-        "topic": "diets",
-        "category": "infos",
-        "content": "Patients have multiple disease should avoid alcohol and consider to be vegetarian",
+        "documentId": "diet-004",
+        "title": "Diet for Multiple Diseases",
+        "domain": "diets",
+        "content": "Patients who have multiple concurrent diseases should completely avoid alcohol and should highly consider transitioning to a vegetarian diet rich in vegetables.",
         "metadata": {}
     }
 ]

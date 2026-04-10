@@ -9,7 +9,7 @@
     "start": "bun run build && bun dist/src/server.js",
     "predev": "lsof -ti:5002 | xargs kill -9 || true",
     "dev": "bun --watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/src/prompt/templates && cp src/prompt/templates/*.njk dist/src/prompt/templates/",
     "clean": "rm -rf dist && rm -rf .faiss_store",
     "test": "bun test",
     "test:watch": "bun test --watch"

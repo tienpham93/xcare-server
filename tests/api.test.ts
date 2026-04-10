@@ -1,7 +1,7 @@
 import axios from "axios";
 import { describe, test, expect, beforeAll } from "bun:test";
 
-const BASE_URL = "http://localhost:5002";
+const BASE_URL = process.env.BASE_URL || "http://localhost:5002";
 
 describe("xcare-bot-agent API Tests", () => {
     let token: string;

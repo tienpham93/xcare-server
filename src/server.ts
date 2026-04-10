@@ -26,7 +26,7 @@ app.use(express.json());
         // Set REINITIALIZE_KB=true in .env to force a full re-ingest of knowledge docs.
         if (process.env.REINITIALIZE_KB === 'true') {
             logger.info('REINITIALIZE_KB flag detected — re-ingesting knowledge base...');
-            await knowledgeBase.initializeKnowledgeBase('./src/knowledge');
+            await knowledgeBase.initializeKnowledgeBase('./prisma/seeds/knowledge');
         } else {
             await knowledgeBase.connectToExistingStore();
         }

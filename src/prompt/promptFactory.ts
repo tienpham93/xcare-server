@@ -37,21 +37,35 @@ export const promptGenerator = async (
     messageType: string, 
     message: string, 
     knowledge: SearchResult[], 
-    username?: string
+    username?: string,
+    intent: string = "UNKNOWN"
 ): Promise<string> => {
     switch (messageType) {
         case "general":
             return renderPrompt("general.njk", {
                 knowledge_items: knowledge,
+                user_query: message,
+                intent: intent
+            });
+
+        case "router":
+            return renderPrompt("router.njk", {
                 user_query: message
             });
 
-        case "submit":
-            const userInfo = username ? await userInfos(username) : "Anonymous user";
+        case "ranker":
+            return renderPrompt("ranker.njk", {
+                user_query: message,
+                context_item: knowledge?.[0]?.content || ""
+            });
+
+        case "submit": {
+            const userInfo = username ? await userInfos(username) : "No user information available.";
             return renderPrompt("ticket_extraction.njk", {
                 user_infos: userInfo,
                 user_query: message
             });
+        }
 
         default:
             return renderPrompt("general.njk", {

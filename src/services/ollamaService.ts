@@ -44,13 +44,38 @@ export class OllamaService {
         }
     }
 
-    async generate(username: string, prompt: string, relevantResult?: SearchResult[] | null): Promise<any> {
+    async classifyIntent(prompt: string): Promise<any> {
+        try {
+            const completePrompt = await promptGenerator("router", prompt, []);
+            const response = await this.llm.invoke([new HumanMessage(completePrompt)]);
+            const parsed = parseAnswer(response.content as string);
+            return parsed.intent ? parsed : { intent: "MEDICAL_QUERY", domains: ["general"], reasoning: "fallback" };
+        } catch (error) {
+            logger.error("Error in classifyIntent", error);
+            return { intent: "MEDICAL_QUERY", domains: ["general"], reasoning: "error fallback" };
+        }
+    }
+
+    async assessContext(prompt: string, context: SearchResult): Promise<any> {
+        try {
+            const completePrompt = await promptGenerator("ranker", prompt, [context]);
+            const response = await this.llm.invoke([new HumanMessage(completePrompt)]);
+            const parsed = parseAnswer(response.content as string);
+            return parsed.context_sufficiency ? parsed : { relevance_score: 0.5, is_relevant: true, context_sufficiency: "SUFFICIENT" };
+        } catch (error) {
+            logger.error("Error in assessContext", error);
+            return { relevance_score: 0.5, is_relevant: true, context_sufficiency: "SUFFICIENT" };
+        }
+    }
+
+    async generate(username: string, prompt: string, relevantResult?: SearchResult[] | null, intent: string = "UNKNOWN"): Promise<any> {
         try {
             const completePrompt = await promptGenerator(
                 "general",
                 prompt, 
                 relevantResult || [], 
-                username
+                username,
+                intent
             );
 
             const response = await this.llm.invoke([
@@ -72,7 +97,7 @@ export class OllamaService {
             const completePrompt = await promptGenerator(
                 "submit",
                 prompt, 
-                relevantResult || [], 
+                [],       // No RAG context needed — just user profile + message
                 username
             );
 

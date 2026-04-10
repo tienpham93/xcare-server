@@ -1,50 +1,31 @@
 [
     {
-        "topic": "billing",
-        "category": "keywords",
-        "content": "much, how much, expensive, cheap, package, price, moneny, fee, charge, free, pay, payment, $, usd, card, cash, offline, online",
-        "metadata": {}
-    },
-    {
-        "topic": "billing",
-        "category": "infos",
-        "content": "Online consult with online doctors through XCare hotline 1900 1234 is free",
+        "documentId": "bill-001",
+        "title": "Online Consultation Fees",
+        "domain": "billing",
+        "content": "Online consultations with online doctors through the XCare hotline 1900 1234 are completely free of charge.",
         "metadata": {
-            "nextTopic": "contacts"
+            "suggested_actions": [
+                { "label": "View Contact Info", "targetDomain": "contacts" }
+            ]
         }
     },
     {
-        "topic": "billing",
-        "category": "infos",
-        "content": "Offline consult with doctor is from approximately $100 to $200 per visit",
-        "metadata": { 
-            "nextTopic": "contacts"
-        }
-    },
-    {
-        "topic": "billing",
-        "category": "infos",
-        "content": "oscopy fees are from approximately $200 to $1000",
+        "documentId": "bill-002",
+        "title": "Offline Consultation and Treatment Fees",
+        "domain": "billing",
+        "content": "Offline physical consultations with a doctor cost from approximately $100 to $200 per visit. Endoscopy fees range from approximately $200 to $1000. General surgeries cost between approximately $1000 to $10000. All services, treatments, and medical packages can be paid for using either a credit card or cash (both online and offline).",
         "metadata": {}
     },
     {
-        "topic": "billing",
-        "category": "infos",
-        "content": "General surgeries are from approximately $1000 to $10000",
-        "metadata": {}
-    },
-    {
-        "topic": "billing",
-        "category": "infos",
-        "content": "Adolescent Package, Under30 Package, Middle Age Package, Senior Package, Premium Package are same price as $1000",
+        "documentId": "bill-003",
+        "title": "Medical Package Pricing",
+        "domain": "billing",
+        "content": "XCare offers various medical packages including the Adolescent Package, Under30 Package, Middle Age Package, Senior Package, and Premium Package. All of these medical packages are priced the same at $1000.",
         "metadata": {
-            "nextTopic": "medical_package"
+            "suggested_actions": [
+                { "label": "View Medical Packages", "targetDomain": "medical_package" }
+            ]
         }
-    },
-    {
-        "topic": "billing",
-        "category": "infos",
-        "content": "All services and packages can be pay by card or cash",
-        "metadata": {}
     }
 ]

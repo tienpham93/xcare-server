@@ -1,6 +1,8 @@
 
 
 
+import { logger } from "./logger";
+
 export const extractSubString = (string: string, regex: RegExp): any => {
     const match = string.match(regex);
     if (match && match[1]) {
@@ -13,11 +15,18 @@ export const extractSubString = (string: string, regex: RegExp): any => {
 }
 
 export const parseAnswer = (response: string): any => {
-    const match = response.match(/\*\*\*({.*})\*\*\*/);
+    // regex 's' flag allows matching across multiple lines
+    const match = response.match(/\*\*\*\s*({.*})\s*\*\*\*/s);
     if (match && match[1]) {
-        const jsonString = match[1]
-            .replace(/True/g, 'true')
-        return JSON.parse(jsonString);
+        try {
+            const jsonString = match[1]
+                .replace(/True/g, 'true')
+                .trim();
+            return JSON.parse(jsonString);
+        } catch (e) {
+            logger.error("Failed to parse JSON in parseAnswer:", e);
+            return {};
+        }
     }
     return {};
 };

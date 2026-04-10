@@ -34,15 +34,22 @@ export const postGenerateHandler = async (
             ollamaService.setModel(model);
         }
 
-        // Invoke LangGraph Agent
+        // Invoke LangGraph Agent with all state fields initialized
         const graphResult = await agentGraph.invoke({
             question: prompt,
             username: username || 'anonymous',
             messageType: messageType,
-            history: [], // We can expand this for multi-turn later
+            history: [],
+            intent: 'UNKNOWN',
+            domains: [],
+            contextStatus: 'SUFFICIENT',
+            usedWebSearch: false,
+            documents: [],
+            generation: '',
+            evalMetadata: {}
         }, {
             configurable: {
-                llm: ollamaService['llm'] // Direct access for the graph
+                llm: ollamaService['llm']
             }
         });
 
@@ -78,7 +85,7 @@ export const postGenerateHandler = async (
                 body: JSON.stringify({
                     conversation: {
                         user: prompt,
-                        bot: parsed.answer
+                        bot: parsed.answer || response // Use raw response as fallback
                     },
                     isManIntervention: true,
                     evalMetadata: evalMetadata // Pass along the audit trail
@@ -87,6 +94,7 @@ export const postGenerateHandler = async (
         };
 
         logger.info('Bot response generated via LangGraph');
+        logger.info(`Bot response: ${response}`);
         res.json({
             sessionId: sessionId,
             conversation: botResponse,

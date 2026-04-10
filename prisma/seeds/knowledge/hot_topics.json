@@ -1,24 +1,24 @@
 [
     {
-        "topic": "hot_topics",
-        "category": "keywords",
-        "content": "Covid-19, coronavirus, Submit a ticket, Raise a ticket, Raise requests",
-        "metadata": {}
-    },
-    {
-        "topic": "hot_topics",
-        "category": "infos",
-        "content": "Covid-19 possible includes fever, cough, shortness of breath, fatigue, body aches, loss of taste or smell, sore throat, congestion",
+        "documentId": "hot-topic-001",
+        "title": "Symptoms of Covid-19",
+        "domain": "hot_topics",
+        "content": "Possible symptoms of Covid-19 include fever, cough, shortness of breath, fatigue, body aches, loss of taste or smell, sore throat, and congestion.",
         "metadata": {
-            "nextTopic": "general_sysmptoms"
+            "suggested_actions": [
+                { "label": "View Mild Symptoms Overview", "targetDomain": "symptoms" }
+            ]
         }
     },
     {
-        "topic": "hot_topics",
-        "category": "infos",
-        "content": "If you have Covid-19 at higher risk for severe illness, talk to your healthcare provider as soon as possible.In order to have vaccination, which is the first step to prevent severe health outcomes.",
+        "documentId": "hot-topic-002",
+        "title": "Covid-19 Treatment and Prevention",
+        "domain": "hot_topics",
+        "content": "If you have Covid-19 and are at a higher risk for severe illness, talk to your healthcare provider as soon as possible. Getting vaccinated is the first and most important step to prevent severe health outcomes.",
         "metadata": {
-            "nextTopic": "general_sysmptoms"
+            "suggested_actions": [
+                { "label": "Contact Us", "targetDomain": "contacts" }
+            ]
         }
     }
 ]

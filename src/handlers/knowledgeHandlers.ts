@@ -24,17 +24,16 @@ export const getKnowledgeRules = async (req: Request, res: Response): Promise<vo
  * Creates a new structured knowledge rule.
  */
 export const postKnowledgeRule = async (req: Request, res: Response): Promise<void> => {
-    const { topic, category, content, strictAnswer, isManIntervention, nextTopic, metadata } = req.body;
+    const { documentId, title, domain, content, metadata } = req.body;
     try {
         const newRule = await prisma.knowledgeRule.create({
             data: {
-                topic,
-                category,
+                documentId,
+                title,
+                domain,
                 content,
-                strictAnswer,
-                isManIntervention: isManIntervention ?? false,
-                nextTopic,
                 metadata: metadata ?? {},
+                isActive: true
             },
         });
         res.json(newRule);
@@ -53,7 +52,7 @@ export const patchKnowledgeRule = async (req: Request, res: Response): Promise<v
     const updateData = req.body;
     try {
         const updatedRule = await prisma.knowledgeRule.update({
-            where: { id: Number(id) },
+            where: { id: id },
             data: updateData
         });
         res.json(updatedRule);
@@ -71,7 +70,7 @@ export const deleteKnowledgeRule = async (req: Request, res: Response): Promise<
     const { id } = req.params;
     try {
         await prisma.knowledgeRule.delete({
-            where: { id: Number(id) }
+            where: { id: id }
         });
         res.json({ success: true });
     } catch (error) {

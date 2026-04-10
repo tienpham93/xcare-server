@@ -1,49 +1,26 @@
 [
-    {
-        "topic": "general_symptoms",
-        "category": "keywords",
-        "content": "symptom, critical, low,feel, remains, better, days ago, headache, toothache, fever, flu, cold, unconscious, accident, arm broken, leg broken, stomachache, heart attack",
-        "metadata": {}
-    },
-    {
-        "topic": "general_symptoms",
-        "category": "infos",
-        "content": "low symptoms such as headache, toothache, fever, flu, cold...etc",
-        "metadata": {}
-    },
-    {
-        "topic": "general_symptoms",
-        "category": "infos",
-        "content": "low symptoms usually occur within sessional changes, and can be treated at home, would recommand to stay home, drink enough water, provide vitamin C and sleep well, they will recover soon",
-        "metadata": {}
-    },
-    {
-        "topic": "general_symptoms",
-        "category": "infos",
-        "content": "low symptoms, if don't recover after 3 days, would recommand to connect with XCare online doctors",
-        "metadata": {
-            "nextTopic": "contacts"
-        }
-    },
-    {
-        "topic": "general_symptoms",
-        "category": "infos",
-        "content": "critical symptoms such as unconscious, accident, arm broken, leg broken, stomachache, heart attack...etc",
-        "metadata": {}
-    },
-    {
-        "topic": "general_symptoms",
-        "category": "infos",
-        "content": "critical symptoms are urgent case, and usually lead to internal damges, would recommand to connect with XCare online doctors, then must go to nearby medical centre for quick checkup",
-        "metadata": {
-            "nextTopic": "contacts"
-        }
-    },
-    {
-        "topic": "hot_topics",
-        "category": "infos",
-        "content": "If you have Covid-19 at higher risk for severe illness, talk to your healthcare provider as soon as possible.In order to have vaccination, which is the first step to prevent severe health outcomes.",
-        "metadata": {
-        }
+  {
+    "documentId": "symp-001",
+    "title": "Treatment for Mild Symptoms",
+    "domain": "symptoms",
+    "content": "Mild symptoms include headache, toothache, fever, flu, or cold. These commonly occur during seasonal changes and can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If these mild symptoms do not improve after 3 days, it is recommended to connect with an XCare online doctor.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "Talk to an Online Doctor", "targetDomain": "contacts" }
+      ],
+      "severity": "low"
     }
+  },
+  {
+    "documentId": "symp-002",
+    "title": "Treatment for Critical Symptoms",
+    "domain": "symptoms",
+    "content": "Critical symptoms are urgent cases and include being unconscious, getting into an accident, having a broken arm or leg, severe stomachache, or suffering a heart attack. These usually lead to internal damages. It is recommended to connect with an XCare online doctor immediately, and then you must go to a nearby medical center for a quick checkup.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "Talk to an Online Doctor", "targetDomain": "contacts" }
+      ],
+      "severity": "high"
+    }
+  }
 ]

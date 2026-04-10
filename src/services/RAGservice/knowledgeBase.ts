@@ -35,8 +35,9 @@ export class KnowledgeBase {
         });
 
         this.splitter = new RecursiveCharacterTextSplitter({
-            chunkSize: 1000,
-            chunkOverlap: 200,
+            chunkSize: 600, // Smaller chunks for more precise medical context
+            chunkOverlap: 100,
+            separators: ["\n\n", "\n", ". ", " ", ""], // Prioritize paragraphs and sentences
         });
     }
 
@@ -75,12 +76,10 @@ export class KnowledgeBase {
             for (const k of allKnowledge) {
                 await prisma.knowledgeRule.create({
                     data: {
-                        topic: k.topic,
-                        category: k.category,
+                        documentId: k.documentId,
+                        title: k.title,
+                        domain: k.domain,
                         content: k.content,
-                        strictAnswer: k.metadata?.strictAnswer || null,
-                        isManIntervention: !!k.metadata?.isManIntervention,
-                        nextTopic: k.metadata?.nextTopic || null,
                         metadata: k.metadata || {},
                         isActive: true
                     }
@@ -93,8 +92,9 @@ export class KnowledgeBase {
                 const chunks = await this.splitter.createDocuments(
                     [k.content],
                     [{ 
-                        topic: k.topic, 
-                        category: k.category, 
+                        documentId: k.documentId,
+                        title: k.title, 
+                        domain: k.domain, 
                         source: k.source,
                         ...k.metadata 
                     }]
@@ -132,18 +132,23 @@ export class KnowledgeBase {
      * 1. Search KnowledgeRule table for keyword/topic triggers.
      * 2. Fallback to Vector Store for semantic similarity.
      */
-    public async searchRelevant(text: string): Promise<SearchResult[] | null> {
+    public async searchRelevant(text: string, domains?: string[]): Promise<SearchResult[] | null> {
         try {
+            // Filter by domains if provided
+            const domainFilter = domains && domains.length > 0 ? { in: domains } : undefined;
+
             // Path 1: Strict Rule Lookup (Deterministic)
-            // We search for rules where the topic or ANY word in the text matches the rule content/topic
+            // We search for rules where the title or ANY word in the text matches the rule content/title
             const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+            logger.info(`Analyzing words for strict match: [${words.join(', ')}]`);
             
             const strictRules = await prisma.knowledgeRule.findMany({
                 where: {
                     isActive: true,
+                    domain: domainFilter,
                     OR: [
-                        { topic: { in: words, mode: 'insensitive' } },
-                        { topic: { contains: text, mode: 'insensitive' } },
+                        { title: { in: words, mode: 'insensitive' } },
+                        { title: { contains: text, mode: 'insensitive' } },
                         // Check if any of our trigger words are in the content
                         ...words.map(word => ({
                             content: { contains: word, mode: 'insensitive' as Prisma.QueryMode }
@@ -154,18 +159,19 @@ export class KnowledgeBase {
             });
 
             if (strictRules.length > 0) {
-
                 logger.info(`Matched ${strictRules.length} strict rules via priority lookup`);
+                strictRules.forEach(r => {
+                    const matchSource = words.find(w => r.content.toLowerCase().includes(w)) || 'title/text match';
+                    logger.info(`  [MATCH] Rule ID ${r.id} (${r.title}) triggered by: "${matchSource}"`);
+                });
                 return strictRules.map((r: KnowledgeRule) => ({
-                    topic: r.topic,
-                    category: r.category,
+                    documentId: r.documentId,
+                    title: r.title,
+                    domain: r.domain,
                     content: r.content,
                     similarity: 1.0, // Strict matches are high priority
                     metadata: {
                         ...(r.metadata as any),
-                        strictAnswer: r.strictAnswer,
-                        isManIntervention: r.isManIntervention,
-                        nextTopic: r.nextTopic,
                         ruleId: r.id
                     }
                 }));
@@ -174,14 +180,24 @@ export class KnowledgeBase {
             // Path 2: Semantic Vector Fallback
             if (!this.vectorStore) return null;
             
-            const results = await this.vectorStore.similaritySearchWithScore(text, 5);
+            // Build filter for metadata if domains are provided
+            const vectorFilter = domains && domains.length > 0 
+                ? { domain: { in: domains } } 
+                : undefined;
+
+            const results = await this.vectorStore.similaritySearchWithScore(
+                text, 
+                5,
+                vectorFilter as any
+            );
             
             // Apply threshold (standard practice: 0.4)
             const filteredResults = results.filter(([_, score]) => score >= 0.4);
 
             return filteredResults.map(([doc, score]) => ({
-                topic: doc.metadata.topic as string,
-                category: doc.metadata.category as string,
+                documentId: doc.metadata.documentId as string,
+                title: doc.metadata.title as string,
+                domain: doc.metadata.domain as string,
                 content: doc.pageContent,
                 similarity: score,
                 metadata: doc.metadata

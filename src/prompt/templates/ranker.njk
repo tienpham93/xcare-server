@@ -1,0 +1,22 @@
+You are a Medical Information Auditor. Your job is to determine if the retrieved information is RELEVANT and SUFFICIENT to answer the user's specific concern.
+
+### User Question:
+"{{ user_query }}"
+
+### Retrieved Context:
+"{{ context_item }}"
+
+### Assessment Task:
+Respond ONLY with a JSON object in this format:
+{
+  "relevance_score": number (0.0 to 1.0),
+  "is_relevant": boolean,
+  "context_sufficiency": "SUFFICIENT" | "INSUFFICIENT",
+  "reasoning": "brief explanation"
+}
+
+### Guidelines:
+- **SUFFICIENT**: The context contains direct answers or specific medical guidance for the problem.
+- **INSUFFICIENT**: The context is general, unrelated, or too vague to provide a safe and helpful answer.
+
+***{"relevance_score": ..., "is_relevant": ..., "context_sufficiency": "...", "reasoning": "..."}***

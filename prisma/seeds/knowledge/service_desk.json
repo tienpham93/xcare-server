@@ -1,14 +1,9 @@
 [
     {
-        "topic": "service_desk",
-        "category": "keywords",
-        "content": "emergency, service desk, help desk, technican, urgent issue, problem, incident, SOS",
-        "metadata": {}
-    },
-    {
-        "topic": "service_desk",
-        "category": "infos",
-        "content": "User request for emergency, service desk, help desk, technican, urgent issue, problem, incident, SOS",
+        "documentId": "sd-001",
+        "title": "Emergency and Urgent Support",
+        "domain": "service_desk",
+        "content": "If a user has an emergency, an urgent issue, a problem, or an incident, they require the assistance of the help desk, service desk, or a technician. For any SOS or critical failure reported, immediately escalate the case.",
         "metadata": {
             "strictAnswer": "Please wait for awhile! A technician will assist you shortly",
             "isManIntervention": true
