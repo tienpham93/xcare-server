@@ -1,0 +1,59 @@
+# ============================================================
+# RETRIEVAL SUITE — Medical Package Domain
+# Ground Truth Source: prisma/seeds/knowledge/medical_package.json
+#   med-pkg-001: "Medical Packages by Age Demographic"
+#     - Below 20: Adolescent Package
+#     - 20–30:    Under30 Package
+#     - 31–45:    Middle Age Package
+#     - Above 45: Senior Package
+#     - Female above 45: Premium Package (additionally eligible)
+#   med-pkg-002: "Medical Packages Pricing"
+#     - All packages: $1000
+#     - Details at www.xcare.com
+# Strategy: Age-group package names are unique to med-pkg-001.
+#           "$1000" price tag is unique to med-pkg-002.
+# ============================================================
+
+- description: "[RETRIEVAL|packages] Senior package — maps to med-pkg-001"
+  vars:
+    test_name: "PKG_001 | Senior Health Package"
+    username: "tienpham"
+    request: "I am 55 years old. What health screening package is right for me?"
+  assert:
+    - type: "icontains"
+      value: "Senior Package"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|packages] Under30 for 25-year-old — maps to med-pkg-001"
+  vars:
+    test_name: "PKG_002 | Under30 Package Eligibility"
+    username: "tienpham"
+    request: "I am 25 years old. Which medical package should I choose?"
+  assert:
+    - type: "icontains"
+      value: "Under30"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|packages] Adolescent Package — maps to med-pkg-001"
+  vars:
+    test_name: "PKG_003 | Adolescent Package"
+    username: "tienpham"
+    request: "What health packages do you offer for teenagers?"
+  assert:
+    - type: "icontains"
+      value: "Adolescent Package"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|packages] Pricing — maps to med-pkg-002"
+  vars:
+    test_name: "PKG_004 | Package Pricing"
+    username: "tienpham"
+    request: "How much do your health screening packages cost?"
+  assert:
+    - type: "javascript"
+      value: 'output.includes("$1000") || output.includes("1,000")'
+    - type: "not-icontains"
+      value: "out of my knowledge"

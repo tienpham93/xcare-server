@@ -83,7 +83,6 @@ export class OllamaService {
                 username,
                 intent
             );
-            console.log('>>>>>> general completePrompt', completePrompt)
             const response = await this.llm.invoke([
                 new HumanMessage(completePrompt)
             ]);

@@ -13,8 +13,8 @@ defaultTest:
         baseUrl: "http://localhost:11434"
 
 tests:
-  - "tests/evals/retrieval.yaml"
-  - "tests/evals/generation.yaml"
+  - "tests/evals/retrieval/*.yaml"
+  - "tests/evals/generation/*.yaml"
 
 prompts:
   - "{{request}}"

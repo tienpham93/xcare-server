@@ -1,0 +1,109 @@
+# ============================================================
+# GEN-06 | CONVERSATIONAL MODE & FALLBACKS
+# ============================================================
+# Mission:
+#   Verify that the bot handles non-RAG conversational inputs gracefully:
+#     A. CHAT mode: Small talk, greetings, pleasantries
+#        → Warm, human-like tone. No service desk redirect. No medical facts.
+#     B. EMERGENCY strict rule: Triggers hardcoded service_desk.json rule
+#        → strictAnswer: "Please wait for awhile! A technician will assist you shortly"
+#        → isManIntervention: true
+#
+# Assertion strategy:
+#   - llm-rubric (0.80–0.90): Tone and conversational quality for CHAT path
+#   - icontains / javascript: Hard routing checks for EMERGENCY path
+#   - not-icontains: Confirms CHAT path does not trigger service desk redirect
+#
+# Ground Truth:
+#   sd-001: service_desk.json — strictAnswer for emergency escalation
+#
+# Add tests here when: new conversation entry points are added to the bot
+#   (e.g., onboarding flow, post-appointment feedback dialogue).
+# ============================================================
+
+- description: "[GEN-06] Chat — morning greeting receives warm, on-topic reply"
+  vars:
+    test_name: "GEN_CHAT_001 | Chat - Morning Greeting"
+    username: "tienpham"
+    request: "Good morning! How are you today?"
+  assert:
+    - type: "javascript"
+      value: "output.length > 10"
+    - type: "not-icontains"
+      value: "service desk"
+    - type: "not-icontains"
+      value: "I am connecting"
+    - type: "not-icontains"
+      value: "unrelated to healthcare"
+    - type: "llm-rubric"
+      threshold: 0.80
+      value: |
+        Score the response from 0.0 to 1.0 based on conversational quality:
+        - Award full marks (1.0) if the response is warm, friendly and acknowledges the greeting naturally without redirecting unnecessarily.
+        - Deduct 0.4 points if the response immediately pivots to medical topics without any acknowledgment.
+        - Deduct 0.5 points if the response redirects to the service desk for a greeting.
+        - Award 0.0 if the response refuses to engage or says the greeting is "unrelated to healthcare".
+
+- description: "[GEN-06] Chat — casual positive statement receives natural reply"
+  vars:
+    test_name: "GEN_CHAT_002 | Chat - Casual Positive Statement"
+    username: "tienpham"
+    request: "What a wonderful day today!"
+  assert:
+    - type: "not-icontains"
+      value: "service desk"
+    - type: "not-icontains"
+      value: "unrelated to healthcare"
+    - type: "llm-rubric"
+      threshold: 0.80
+      value: |
+        Score the response from 0.0 to 1.0 based on conversational naturalness:
+        - Award full marks (1.0) if the response acknowledges the pleasantry in a friendly way and invites the user to ask about health topics.
+        - Deduct 0.3 points if the response completely ignores the statement and jumps straight to a medical prompt.
+        - Deduct 0.5 points if the response redirects to service desk or refuses to engage.
+        - Award 0.0 if the response says this is "unrelated to healthcare" for a casual greeting.
+
+- description: "[GEN-06] Chat — thank-you message receives gracious acknowledgement"
+  vars:
+    test_name: "GEN_CHAT_003 | Chat - Thank You Message"
+    username: "tienpham"
+    request: "Thank you so much for your help!"
+  assert:
+    - type: "not-icontains"
+      value: "service desk"
+    - type: "not-icontains"
+      value: "unrelated to healthcare"
+    - type: "llm-rubric"
+      threshold: 0.80
+      value: |
+        Score the response from 0.0 to 1.0 based on gracious acknowledgement:
+        - Award full marks (1.0) if the response politely acknowledges the appreciation and offers further assistance.
+        - Deduct 0.5 points if the response ignores the thanks and redirects abruptly.
+        - Award 0.0 if the response refuses to engage or redirects to service desk.
+
+- description: "[GEN-06] Emergency — strict KB rule triggers technician handover"
+  vars:
+    test_name: "GEN_CHAT_004 | Fallback - Emergency Strict Rule"
+    username: "tienpham"
+    request: "Emergency! My patient is losing consciousness right now!"
+  assert:
+    # strictAnswer from service_desk.json sd-001
+    - type: "icontains"
+      value: "technician"
+    - type: "javascript"
+      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+    - type: "not-icontains"
+      value: "unrelated to healthcare"
+    - type: "not-icontains"
+      value: "connecting to service desk"
+
+- description: "[GEN-06] Emergency — SOS keyword triggers hardcoded service desk rule"
+  vars:
+    test_name: "GEN_CHAT_005 | Fallback - SOS Keyword"
+    username: "tienpham"
+    request: "SOS! There is a medical emergency at our clinic!"
+  assert:
+    - type: "icontains"
+      value: "technician"
+    - type: "javascript"
+      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'

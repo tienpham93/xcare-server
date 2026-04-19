@@ -1,0 +1,150 @@
+# ============================================================
+# GEN-05 | ROBUSTNESS — PARAPHRASE & SYNONYM RESILIENCE
+# ============================================================
+# Mission:
+#   Verify that the bot returns consistent, correct answers regardless
+#   of how a query is phrased. Real users may use slang, synonyms,
+#   incomplete sentences, or rephrase the same question differently.
+#   The bot must recognise the intent and retrieve the same KB document.
+#
+# Test structure:
+#   Each "scenario" groups 2–3 variants of the same underlying query.
+#   All variants should map to the same KB document and produce an answer
+#   that semantically matches the same expected ground truth.
+#
+# Assertion strategy:
+#   - similar (threshold: 0.75): Embedding comparison between output and
+#     the canonical expected answer. Lower threshold than accuracy suite
+#     to allow for natural language variation in phrasing of the answer.
+#   - icontains: Key fact string that uniquely identifies the correct KB document.
+#   - not-icontains: Confirms no wrong KB document was used.
+#
+# Ground Truth: prisma/seeds/knowledge/
+# Add tests here when: new synonym patterns are found that cause wrong
+#   intent routing or incorrect KB document retrieval.
+# ============================================================
+
+# --- SCENARIO A: Mild Symptoms (symp-001) -------------------------
+# Canonical query: "I have a headache. What should I do?"
+# Key probe: "Vitamin C" (unique to symp-001)
+
+- description: "[GEN-05] Robustness — Symptom rephrased as colloquial complaint"
+  vars:
+    test_name: "GEN_ROB_001 | Robustness - Symptom (Colloquial)"
+    username: "tienpham"
+    request: "My head is killing me, got any tips?"
+  assert:
+    - type: "icontains"
+      value: "Vitamin C"
+    - type: "similar"
+      threshold: 0.75
+      value: "For a headache, it is recommended to rest at home, drink enough water, take Vitamin C, and get adequate sleep. If it persists beyond 3 days, consult an online doctor."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GEN-05] Robustness — Symptom rephrased using medical terminology"
+  vars:
+    test_name: "GEN_ROB_002 | Robustness - Symptom (Medical Term)"
+    username: "tienpham"
+    request: "I am experiencing cephalgia. What is the recommended home management?"
+  assert:
+    - type: "icontains"
+      value: "Vitamin C"
+    - type: "similar"
+      threshold: 0.75
+      value: "For a headache, it is recommended to rest at home, drink enough water, take Vitamin C, and get adequate sleep. If it persists beyond 3 days, consult an online doctor."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GEN-05] Robustness — Symptom phrased as a yes/no question"
+  vars:
+    test_name: "GEN_ROB_003 | Robustness - Symptom (Yes/No Form)"
+    username: "tienpham"
+    request: "Can I treat a headache at home or do I need to see a doctor?"
+  assert:
+    - type: "icontains"
+      value: "Vitamin C"
+    - type: "not-icontains"
+      value: "connecting to service desk"
+
+# --- SCENARIO B: Online Consultation Cost (bill-001) --------------
+# Canonical query: "How much does an online doctor consultation cost?"
+# Key probe: "free" (unique to bill-001)
+
+- description: "[GEN-05] Robustness — Billing rephrased as synonym query"
+  vars:
+    test_name: "GEN_ROB_004 | Robustness - Billing (Synonym: fee/charge)"
+    username: "tienpham"
+    request: "What is the charge for chatting with a doctor online?"
+  assert:
+    - type: "icontains"
+      value: "free"
+    - type: "similar"
+      threshold: 0.75
+      value: "Online consultations with online doctors through the XCare hotline 1900 1234 are completely free of charge."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GEN-05] Robustness — Billing rephrased with Vietnamese-English mix style"
+  vars:
+    test_name: "GEN_ROB_005 | Robustness - Billing (Informal Phrasing)"
+    username: "tienpham"
+    request: "I want to talk to doctor online how much I need to pay?"
+  assert:
+    - type: "icontains"
+      value: "free"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+# --- SCENARIO C: Complaint / Feedback (contact-002) ---------------
+# Canonical query: "How do I report a bad experience?"
+# Key probe: "feedback@hotmail.com" (unique to contact-002)
+
+- description: "[GEN-05] Robustness — Contact rephrased using synonyms for complaint"
+  vars:
+    test_name: "GEN_ROB_006 | Robustness - Contact (Synonym: complaint/issue)"
+    username: "tienpham"
+    request: "I had a terrible experience at the clinic. How can I raise an issue?"
+  assert:
+    - type: "icontains"
+      value: "feedback@hotmail.com"
+    - type: "similar"
+      threshold: 0.75
+      value: "To report bad services or provide general feedback, please send an email to feedback@hotmail.com."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GEN-05] Robustness — Contact rephrased as a negative sentiment statement"
+  vars:
+    test_name: "GEN_ROB_007 | Robustness - Contact (Negative Sentiment)"
+    username: "tienpham"
+    request: "The staff was extremely rude. I want to complain."
+  assert:
+    - type: "icontains"
+      value: "feedback@hotmail.com"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+# --- SCENARIO D: Diet for Gout (diet-003) -------------------------
+# Canonical query: "I have gout. What foods should I avoid?"
+# Key probe: "uric acid" (unique to diet-003)
+
+- description: "[GEN-05] Robustness — Gout diet rephrased using medical synonym"
+  vars:
+    test_name: "GEN_ROB_008 | Robustness - Diet (Medical Synonym: hyperuricemia)"
+    username: "tienpham"
+    request: "I have high uric acid levels. What should I not eat?"
+  assert:
+    - type: "icontains"
+      value: "red meats"
+    - type: "similar"
+      threshold: 0.75
+      value: "For gout management, avoid red meats, seafood, and excess animal proteins. These raise uric acid levels and trigger gout attacks."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GEN-05] Robustness — Gout diet rephrased as a food-specific question"
+  vars:
+    test_name: "GEN_ROB_009 | Robustness - Diet (Food-Specific Form)"
+    username: "tienpham"
+    request: "Is it okay for me to eat steak if I have joint inflammation from uric acid?"
+  assert:
+    - type: "icontains"
+      value: "red meats"
+    - type: "not-icontains"
+      value: "connecting to service desk"

@@ -1,0 +1,68 @@
+# ============================================================
+# RETRIEVAL SUITE — Billing Domain
+# Ground Truth Source: prisma/seeds/knowledge/billing.json
+#   bill-001: "Online Consultation Fees"
+#     - XCare hotline 1900 1234 → completely free of charge
+#   bill-002: "Offline Consultation and Treatment Fees"
+#     - $100–$200 per visit, Endoscopy $200–$1000, Surgery $1000–$10000
+#     - Credit card or cash accepted
+#   bill-003: "Medical Package Pricing"
+#     - All packages priced at $1000
+# Strategy: Each query probes a unique dollar amount or hotline number
+#           that only exists in one specific billing document.
+# ============================================================
+
+- description: "[RETRIEVAL|billing] Online consult is free — maps to bill-001"
+  vars:
+    test_name: "BILL_001 | Online Consultation Cost"
+    username: "tienpham"
+    request: "How much does an online doctor consultation cost?"
+  assert:
+    - type: "icontains"
+      value: "free"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|billing] Hotline number uniquely in bill-001"
+  vars:
+    test_name: "BILL_002 | XCare Hotline Number"
+    username: "tienpham"
+    request: "What is the XCare phone number to talk to a doctor?"
+  assert:
+    - type: "icontains"
+      value: "1900 1234"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|billing] Physical visit cost — maps to bill-002"
+  vars:
+    test_name: "BILL_003 | Offline Consultation Fee"
+    username: "tienpham"
+    request: "How much does it cost to see a doctor in person?"
+  assert:
+    - type: "javascript"
+      value: 'output.includes("$100") || output.includes("$200")'
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|billing] Endoscopy cost uniquely in bill-002"
+  vars:
+    test_name: "BILL_004 | Endoscopy Fee"
+    username: "tienpham"
+    request: "What is the cost of an endoscopy at XCare?"
+  assert:
+    - type: "icontains"
+      value: "$200"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|billing] Package price uniquely in bill-003"
+  vars:
+    test_name: "BILL_005 | Medical Package Price"
+    username: "tienpham"
+    request: "How much does a medical health package cost?"
+  assert:
+    - type: "javascript"
+      value: 'output.includes("$1000") || output.includes("1,000")'
+    - type: "not-icontains"
+      value: "out of my knowledge"

@@ -11,7 +11,7 @@ The service provides:
 - **Analytics & Monitoring**: Vote capture and automated human-intervention audit logging.
 
 ## 🏢 Business Context
-For detailed information regarding the startup's mission, target audience, and key value propositions, please refer to the **[Business Overview](./docs/BUSINESS.md)**.
+For detailed information regarding the startup's mission, target audience, and key value propositions, please refer to the **[Business Overview](./docs/BUSINESS_WORKFLOW.md)**.
 
 ---
 
@@ -146,7 +146,7 @@ bun run test:watch   # Watch tests
 The server provides a comprehensive set of REST APIs for chat generation, auth, ticket management, and knowledge base administration.
 
 > [!NOTE]
-> For a detailed list of all endpoints, request/response schemas, and examples, please refer to the **[API Documentation](./docs/API.md)**.
+> For a detailed list of all endpoints, request/response schemas, and examples, please refer to the **[API Documentation](./docs/API_DOCUMENTATION.md)**.
 
 ### Quick Reference
 
@@ -192,7 +192,7 @@ graph TD
 ### Intent Types
 ## 🧪 Testing Architecture
 
-We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into our testing philosophy, setup, and troubleshooting, see the **[Testing Documentation](./docs/TEST.md)**.
+We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into our testing philosophy, setup, and troubleshooting, see the **[Testing Blueprint](./docs/TEST_ARCHITECTURE.md)**.
 
 ### Quick Commands
 | Type | Target | Command |

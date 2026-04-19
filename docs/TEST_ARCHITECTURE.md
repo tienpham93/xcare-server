@@ -22,13 +22,12 @@ graph TD
     end
     
     subgraph Layer 3: Intelligence
-    	Eval[RAG Pipeline Evaluation]
-    end
-    
-    Unit --> |Validates Logic| Retrieval
-    Retrieval --> |Validates Data Flow| API
     API --> |Validates End-to-End| Eval
 ```
+
+> [!NOTE]
+> For a deep dive into our evaluation strategy and how to write new benchmarks, see the [EVAL_TEST_GUIDELINE.md](../tests/evals/EVAL_TEST_GUIDELINE.md).
+> For technical details on the evaluation engine, see [PROMPTFOO.md](./PROMPTFOO.md).
 
 ---
 
@@ -114,12 +113,13 @@ Integration tests verify that different components of the system work together a
 - **Purpose**: Validates the HTTP interface. Ensures that middleware (Auth), status codes, and JSON response structures meet the API contract.
 - **Verification**: Performs real HTTP requests to the running express server on port 5002.
 
-#### C. RAG Pipeline Evaluation (Promptfoo)
+#### C. Internal Benchmark — RAG Pipeline Evaluation (Promptfoo)
 - **Path**: `promptfooconfig.yaml` and `tests/evals/`
-- **Purpose**: A comprehensive end-to-end evaluation of the "Intelligence" layer using **Promptfoo**. Models real user requests through the full LangGraph context pipeline.
-- **Evaluation Mechanism**: 
-  - **Retrieval Suite** (`retrieval.yaml`): Uses binary deterministic assertions (`icontains`) to test systemic logic (e.g., hardcoded service desk handovers and grounding rules).
-  - **Generation Suite** (`generation.yaml`): Uses **Scored Evals**. Leverages an explicit judge model (`llama3.1:8b`) to score *factuality* (anti-hallucination checks) and an embedding model (`mxbai-embed-large:335m`) for mathematical semantic *similarity* against target answers using strict passing thresholds.
+- **Total Cases**: ~49 test cases across 10 YAML files
+- **Purpose**: A comprehensive end-to-end evaluation of the "Intelligence" layer using **Promptfoo** as a scoring framework.
+
+> [!IMPORTANT]
+> Detailed breakdowns of the evaluation suites and the 4-tier assertion pyramid are now maintained in the [EVAL_TEST_GUIDELINE.md](../tests/evals/EVAL_TEST_GUIDELINE.md).
 
 ---
 
@@ -152,16 +152,33 @@ bun run test:integration
 - **Teardown**: After tests finish (even if they fail), it kills the server and runs `docker compose down`.
 
 #### 3. RAG Pipeline Evaluations (Promptfoo)
-Runs the LLM-as-a-Judge semantic scoring matrices to evaluate medical accuracy and anti-hallucination.
+
+**Quick run** — Retrieval only (binary checks, no LLM judge needed, ~3 min):
 ```bash
-bun run test:eval
-bun run test:eval:retrieval
-bun run test:eval:generation
+bun run test:eval:quick
+```
+
+**Per-domain** — Isolate a single suite for fast iteration:
+```bash
+bun run test:eval:retrieval:symptoms
+bun run test:eval:retrieval:billing
+bun run test:eval:retrieval:boundaries
+bun run test:eval:generation:format       # Fast JSON schema checks
+bun run test:eval:generation:accuracy     # KB-grounded factuality
+bun run test:eval:generation:safety       # 🚨 Critical safety gates
+bun run test:eval:generation:oos          # Anti-hallucination
+bun run test:eval:generation:robustness   # Paraphrase resilience
+bun run test:eval:generation:chat         # Conversational mode
+```
+
+**Full benchmark** — All 49 cases with LLM judge (~15 min):
+```bash
+bun run test:eval:full
 ```
 
 **What happens behind the scenes:**
 - Bootstraps the local environment natively using the `pre-test.sh` orchestration script.
-- Evaluates outputs using our pre-downloaded, pinned model weights (`llama3:8b`, `llama3.1:8b`, `mxbai-embed-large:335m`) to ensure **100% CI determinism**.
+- Evaluates outputs using pinned model weights (`llama3:8b`, `llama3.1:8b`, `mxbai-embed-large:335m`) to ensure **100% CI determinism**.
 
 #### 4. Full Suite (Recommended)
 Sequentially runs Unit Tests, Integration Tests, and the RAG Evaluations with automatic cleanup between phases.
@@ -181,9 +198,15 @@ lsof -ti:5002 | xargs kill -9
 
 ---
 
-## 📈 Quality Metrics
+## 📈 Quality Metrics & Scoring System
 
-We leverage Promptfoo's advanced model-graded assertions for rigorous medical testing:
-- **Factuality**: Using the `llama3.1:8b` judge to mathematically verify the LLM has not hallucinated medical instructions beyond the provided dataset.
-- **Semantic Similarity (`similar`)**: Validating structural content like pricing maps with `0.80`-threshold contextual embeddings inside `mxbai-embed-large:335m`.
-- **Deterministic Handovers**: Guaranteeing complex, unsourced medical queries fallback to live clinicians safely (`isManIntervention: true`).
+XCare uses a **4-tier assertion pyramid** for rigorous medical AI evaluation. A detailed description of each tier (Binary, Semantic, Scored, and Critical Safety) can be found in the [EVAL_TEST_GUIDELINE.md](../tests/evals/EVAL_TEST_GUIDELINE.md).
+
+### Target Pass Rates
+| Suite | Cases | Target |
+|---|---|---|
+| Retrieval (all domains) | 31 | **100%** — binary, deterministic |
+| Generation — Accuracy | 6 | ≥ 90% — faithfulness scored |
+| Generation — Anti-Hallucination | 4 | **100%** — binary OOS refusal |
+| Generation — Chat & Fallback | 4 | ≥ 85% — tone + routing |
+| Generation — Medical Safety | 4 | **100%** — safety gates, threshold 1.0 |

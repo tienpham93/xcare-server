@@ -1,0 +1,58 @@
+# ============================================================
+# RETRIEVAL SUITE — Contacts Domain
+# Ground Truth Source: prisma/seeds/knowledge/contacts.json
+#   contact-001: "Online Doctors and Appointments"
+#     - Hotline: 1900 1234
+#     - Website: www.xcare.com
+#   contact-002: "Feedback and Complaints"
+#     - Email: feedback@hotmail.com
+#   contact-003: "Hospital Locations"
+#     - Location 1: 123 Norway District 1, Saigon City
+#     - Location 2: 222 Norway District 2, Saigon City
+#     - Location 3: 321 Norway District 3, Saigon City
+# Strategy: Unique strings (email, address, hotline) act as retrieval probes.
+# ============================================================
+
+- description: "[RETRIEVAL|contacts] Appointment booking maps to contact-001"
+  vars:
+    test_name: "CON_001 | Booking Appointment"
+    username: "tienpham"
+    request: "How do I book an appointment with a doctor?"
+  assert:
+    - type: "icontains"
+      value: "1900 1234"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|contacts] Complaints email uniquely in contact-002"
+  vars:
+    test_name: "CON_002 | Feedback and Complaints"
+    username: "tienpham"
+    request: "How do I report a bad experience or complain about service?"
+  assert:
+    - type: "icontains"
+      value: "feedback@hotmail.com"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|contacts] Hospital address uniquely in contact-003"
+  vars:
+    test_name: "CON_003 | Hospital Location"
+    username: "tienpham"
+    request: "Where is the XCare clinic located?"
+  assert:
+    - type: "icontains"
+      value: "Norway District"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|contacts] Website uniquely in contact-001"
+  vars:
+    test_name: "CON_004 | XCare Website"
+    username: "tienpham"
+    request: "What is the XCare official website?"
+  assert:
+    - type: "icontains"
+      value: "xcare.com"
+    - type: "not-icontains"
+      value: "out of my knowledge"

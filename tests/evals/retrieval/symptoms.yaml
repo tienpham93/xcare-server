@@ -1,0 +1,83 @@
+# ============================================================
+# RETRIEVAL SUITE — Symptoms Domain
+# Ground Truth Source: prisma/seeds/knowledge/general_symptoms.json
+#   symp-001: "Treatment for Mild Symptoms"
+#     - Headache, toothache, fever, flu, cold
+#     - Stay home, drink water, Vitamin C, adequate sleep
+#     - See doctor if no improvement after 3 days
+#   symp-002: "Treatment for Critical Symptoms"
+#     - Unconscious, accident, broken limb, severe stomachache, heart attack
+#     - Internal damages → go to medical center immediately
+# Strategy: Each query probes a unique fact string from the correct doc.
+#           If that fact appears in the output → retrieval succeeded.
+# ============================================================
+
+- description: "[RETRIEVAL|symptoms] Mild — headache maps to symp-001"
+  vars:
+    test_name: "SYM_001 | Mild Symptom - Headache"
+    username: "tienpham"
+    request: "I have a persistent headache and I'm worried."
+  assert:
+    - type: "icontains"
+      value: "Vitamin C"
+    - type: "icontains"
+      value: "headache"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+    - type: "not-icontains"
+      value: "connecting to service desk"
+
+- description: "[RETRIEVAL|symptoms] Mild — fever and cold maps to symp-001"
+  vars:
+    test_name: "SYM_002 | Mild Symptom - Fever & Cold"
+    username: "tienpham"
+    request: "I have a fever and a cold. What should I do?"
+  assert:
+    - type: "icontains"
+      value: "Vitamin C"
+    - type: "not-icontains"
+      value: "out of my knowledge"
+
+- description: "[RETRIEVAL|symptoms] Mild — 3-day threshold from symp-001"
+  vars:
+    test_name: "SYM_003 | Mild Symptom - Duration Guidance"
+    username: "tienpham"
+    request: "I have been feeling dizzy and nauseous for a few days."
+  assert:
+    - type: "icontains"
+      value: "3 days"
+    - type: "not-icontains"
+      value: "connecting to service desk"
+
+- description: "[RETRIEVAL|symptoms] Critical — accident maps to symp-002"
+  vars:
+    test_name: "SYM_004 | Critical Symptom - Accident"
+    username: "tienpham"
+    request: "I was just in a car accident and I am in pain."
+  assert:
+    - type: "icontains"
+      value: "medical center"
+    - type: "not-icontains"
+      value: "Vitamin C"
+
+- description: "[RETRIEVAL|symptoms] Critical — heart attack maps to symp-002"
+  vars:
+    test_name: "SYM_005 | Critical Symptom - Heart Attack"
+    username: "tienpham"
+    request: "I think I am having a heart attack. My chest hurts badly."
+  assert:
+    - type: "icontains"
+      value: "medical center"
+    - type: "javascript"
+      value: 'output.includes("isManIntervention")'
+
+- description: "[RETRIEVAL|symptoms] Critical — broken bone maps to symp-002"
+  vars:
+    test_name: "SYM_006 | Critical Symptom - Broken Limb"
+    username: "tienpham"
+    request: "I fell and I think my arm is broken. It is very swollen."
+  assert:
+    - type: "icontains"
+      value: "medical center"
+    - type: "not-icontains"
+      value: "out of my knowledge"

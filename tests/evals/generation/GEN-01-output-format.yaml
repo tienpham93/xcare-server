@@ -1,0 +1,93 @@
+# ============================================================
+# GEN-01 | OUTPUT FORMAT VALIDATION
+# ============================================================
+# Mission:
+#   Verify that every bot response is a valid, well-structured JSON
+#   object wrapped in triple asterisks (***), containing the three
+#   required fields: "answer", "isManIntervention", "suggested_actions".
+#
+#   These are fast binary checks — no LLM judge is needed.
+#   They act as the lowest-level contract test for the generation pipeline.
+#
+# Required fields (API contract):
+#   - answer            (string)   The bot's textual response
+#   - isManIntervention (boolean)  Whether a human agent is needed
+#   - suggested_actions (array)    UI quick-reply suggestions
+#
+# Ground Truth: src/services/ollamaService.ts (response schema)
+# Add tests here when: new fields are added to the response schema.
+# ============================================================
+
+- description: "[GEN-01] Format — medical query produces valid JSON structure"
+  vars:
+    test_name: "GEN_FMT_001 | Format - Medical Query"
+    username: "tienpham"
+    request: "I have a headache."
+  assert:
+    - type: "icontains"
+      value: "answer"
+    - type: "icontains"
+      value: "isManIntervention"
+    - type: "icontains"
+      value: "suggested_actions"
+    - type: "javascript"
+      value: "output.includes('***') && output.length > 30"
+    # Must be parseable JSON between the *** delimiters
+    - type: "javascript"
+      value: |
+        try {
+          const match = output.match(/\*\*\*([\s\S]*?)\*\*\*/);
+          if (!match) return false;
+          const parsed = JSON.parse(match[1]);
+          return typeof parsed.answer === 'string' && typeof parsed.isManIntervention === 'boolean';
+        } catch(e) { return false; }
+
+- description: "[GEN-01] Format — billing query produces valid JSON structure"
+  vars:
+    test_name: "GEN_FMT_002 | Format - Billing Query"
+    username: "tienpham"
+    request: "How much does an online consultation cost?"
+  assert:
+    - type: "icontains"
+      value: "answer"
+    - type: "icontains"
+      value: "isManIntervention"
+    - type: "icontains"
+      value: "suggested_actions"
+    - type: "javascript"
+      value: "output.includes('***')"
+
+- description: "[GEN-01] Format — emergency produces isManIntervention=true"
+  vars:
+    test_name: "GEN_FMT_003 | Format - Emergency Flag"
+    username: "tienpham"
+    request: "Emergency! I need immediate help!"
+  assert:
+    - type: "icontains"
+      value: "isManIntervention"
+    - type: "javascript"
+      value: 'output.includes("true") || output.includes("True")'
+
+- description: "[GEN-01] Format — greeting produces isManIntervention=false"
+  vars:
+    test_name: "GEN_FMT_004 | Format - Greeting No Intervention"
+    username: "tienpham"
+    request: "Hello! How are you today?"
+  assert:
+    - type: "icontains"
+      value: "isManIntervention"
+    - type: "not-icontains"
+      value: "connecting to service desk"
+
+- description: "[GEN-01] Format — OOS refusal still returns valid JSON"
+  vars:
+    test_name: "GEN_FMT_005 | Format - OOS Refusal Valid JSON"
+    username: "tienpham"
+    request: "Who won the World Cup?"
+  assert:
+    - type: "icontains"
+      value: "answer"
+    - type: "icontains"
+      value: "isManIntervention"
+    - type: "javascript"
+      value: "output.includes('***')"
