@@ -1,0 +1,20 @@
+description: "XCare Assistant RAG Evaluation"
+
+providers:
+  - id: "file://tests/evals/providers/xcare_provider.ts"
+    label: "XCare-Bot"
+
+defaultTest:
+  options:
+    # Use Llama3 via Ollama as the "Judge" for semantic assertions
+    provider:
+      id: "ollama:chat:llama3.1:8b"
+      options:
+        baseUrl: "http://localhost:11434"
+
+tests:
+  - "tests/evals/retrieval.yaml"
+  - "tests/evals/generation.yaml"
+
+prompts:
+  - "{{request}}"

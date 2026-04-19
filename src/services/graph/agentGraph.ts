@@ -1,8 +1,7 @@
 import { Annotation, StateGraph, END, START } from "@langchain/langgraph";
-import { ChatOllama } from "@langchain/ollama";
 import { KnowledgeBase } from "../RAGservice/knowledgeBase";
 import { SearchResult } from "../../types";
-import { HumanMessage, BaseMessage } from "@langchain/core/messages";
+import { BaseMessage } from "@langchain/core/messages";
 import { logger } from "../../utils/logger";
 
 /**
@@ -66,8 +65,8 @@ const routerNode = async (state: typeof AgentState.State) => {
  * Searches the PGVector knowledge base for relevant documents.
  */
 const retrieveNode = async (state: typeof AgentState.State) => {
-  if (state.intent === "CHAT") {
-    logger.info("--- SKIPPING retrieval for general chat ---");
+  if (state.intent === "CHAT" || state.intent === "OUT_OF_SCOPE") {
+    logger.info(`--- SKIPPING retrieval for ${state.intent} ---`);
     return { documents: [] };
   }
 
@@ -118,7 +117,22 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
   const { question, documents, username, contextStatus, intent } = state;
   const { ollamaService } = await import("../../server.js");
 
-  // 1. Path A: Intent is CHAT -> Skip RAG and Rules, just respond
+  // 1. Path A: Intent is OUT_OF_SCOPE -> Deterministic Refusal
+  if (intent === "OUT_OF_SCOPE") {
+    logger.info(`--- HANDLING OUT_OF_SCOPE directly ---`);
+    const deterministicResponse = `***{
+      "answer": "I am an XCare medical assistant. I cannot answer queries unrelated to healthcare.",
+      "isManIntervention": false,
+      "suggested_actions": []
+    }***`.replace(/\s+/g, ' ');
+
+    return {
+      generation: deterministicResponse,
+      evalMetadata: { ...state.evalMetadata, isDeterministic: true, isOutOfScope: true }
+    };
+  }
+
+  // 1. Path B: Intent is CHAT -> Skip RAG and Rules, just respond
   if (intent === "CHAT") {
     logger.info(`--- HANDLING simple chat/greeting ---`);
     const result = await ollamaService.generate(username, question, [], intent);
@@ -136,8 +150,16 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     const strictDoc = documents.find(d => d.metadata?.strictAnswer && (d.similarity || 0) >= 0.95);
     if (strictDoc && strictDoc.metadata) {
       logger.info(`--- DETERMINISTIC Answer triggered for: ${strictDoc.title} ---`);
+      
+      // Standardize the response format to match LLM output for consistency
+      const deterministicResponse = `***{
+        "answer": "${strictDoc.metadata.strictAnswer}",
+        "isManIntervention": ${strictDoc.metadata.isManIntervention || false},
+        "suggested_actions": ${JSON.stringify(strictDoc.metadata.suggested_actions || [])}
+      }***`.replace(/\s+/g, ' ');
+
       return {
-        generation: strictDoc.metadata.strictAnswer!,
+        generation: deterministicResponse,
         evalMetadata: { ...state.evalMetadata, isDeterministic: true, ruleId: strictDoc.metadata.ruleId }
       };
     }
@@ -157,18 +179,31 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
 
   if (strictFallback && strictFallback.metadata) {
     logger.info(`--- FALLBACK RULE triggered: ${strictFallback.title} ---`);
+    
+    // Standardize the response format
+    const deterministicResponse = `***{
+      "answer": "${strictFallback.metadata.strictAnswer}",
+      "isManIntervention": ${strictFallback.metadata.isManIntervention || false},
+      "suggested_actions": ${JSON.stringify(strictFallback.metadata.suggested_actions || [])}
+    }***`.replace(/\s+/g, ' ');
+
     return {
-      generation: strictFallback.metadata.strictAnswer!,
+      generation: deterministicResponse,
       evalMetadata: { ...state.evalMetadata, isDeterministic: true, isFallback: true }
     };
   }
 
-  // 4. Path D: No Rules -> General LLM Knowledge
-  logger.info(`--- NO RULES found, using general LLM knowledge ---`);
-  const result = await ollamaService.generate(username, question, [], intent);
+  // 3. Path D: Complete Miss -> Hardcode Service Desk Handover
+  logger.info(`--- NO RULES found, escalating to Service Desk ---`);
+  const fallbackResponse = `***{
+    "answer": "Your query is out of my knowledge, please wait for a minute! I am connecting to service desk team",
+    "isManIntervention": true,
+    "suggested_actions": [{"label": "Contact Service Desk", "targetDomain": "service_desk"}]
+  }***`.replace(/\s+/g, ' ');
+
   return {
-    generation: result.response,
-    evalMetadata: { ...state.evalMetadata, usedGeneralKnowledge: true, isDeterministic: false }
+    generation: fallbackResponse,
+    evalMetadata: { ...state.evalMetadata, isDeterministic: true, isFallback: true }
   };
 };
 

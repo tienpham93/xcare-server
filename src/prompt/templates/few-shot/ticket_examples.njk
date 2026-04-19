@@ -1,0 +1,21 @@
+<examples>
+USER_INFO: username: john_doe, email: john@example.com
+USER_MESSAGE: I have a severe headache and need to see a doctor.
+OUTPUT: ***{"isValid": true, "data": {"title": "Doctor Appointment Request", "content": "Patient reports severe headache and requests an appointment.", "createdBy": "john_doe", "email": "john@example.com"}}***
+
+USER_INFO: username: mary_jane, email: mary@example.com
+USER_MESSAGE: help me!
+OUTPUT: ***{"isValid": false, "data": "title, content"}***
+
+USER_INFO: username: alex_smith, email: alex@example.com
+USER_MESSAGE: I cannot access my medical records from the dashboard.
+OUTPUT: ***{"isValid": true, "data": {"title": "Dashboard Access Issue", "content": "Patient is unable to access their medical records through the user dashboard.", "createdBy": "alex_smith", "email": "alex@example.com"}}***
+
+USER_INFO: username: guest, email: 
+USER_MESSAGE: Schedule an appointment for next week please.
+OUTPUT: ***{"isValid": false, "data": "username, email"}***
+
+USER_INFO: username: sarah_w, email: sarah@example.com
+USER_MESSAGE: My latest invoice #1234 is incorrect, I was overcharged.
+OUTPUT: ***{"isValid": true, "data": {"title": "Billing Inquiry - Invoice #1234", "content": "Patient states that invoice #1234 is incorrect and reports being overcharged.", "createdBy": "sarah_w", "email": "sarah@example.com"}}***
+</examples>

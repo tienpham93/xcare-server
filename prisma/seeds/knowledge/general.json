@@ -1,0 +1,63 @@
+[
+  {
+    "documentId": "gen-001",
+    "title": "What XCare Can Help You With",
+    "domain": "general",
+    "content": "XCare Digital Assistant can help you with a wide range of health-related questions. These include general symptom guidance (headache, fever, cold, stomach pain), diet and nutrition recommendations for chronic conditions, information about our medical packages and health screening plans, billing and pricing queries, and booking appointments with our doctors. For emergencies or complex conditions, our medical staff are available to assist you directly.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "Ask About Symptoms", "targetDomain": "symptoms" },
+        { "label": "View Medical Packages", "targetDomain": "medical_package" },
+        { "label": "Contact Us", "targetDomain": "contacts" }
+      ]
+    }
+  },
+  {
+    "documentId": "gen-002",
+    "title": "General Health Tips for Adults",
+    "domain": "general",
+    "content": "Maintaining good health involves a combination of balanced nutrition, regular physical activity, adequate sleep, and routine medical checkups. Adults should aim for at least 150 minutes of moderate-intensity exercise per week, maintain a balanced diet rich in fruits, vegetables, and whole grains, and ensure 7–9 hours of sleep per night. Staying hydrated, managing stress, and avoiding smoking or excessive alcohol are equally important. Annual health screenings can help detect conditions early and improve long-term outcomes.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "View Diet Recommendations", "targetDomain": "diets" },
+        { "label": "Book a Health Screening", "targetDomain": "medical_package" }
+      ]
+    }
+  },
+  {
+    "documentId": "gen-003",
+    "title": "When to See a Doctor",
+    "domain": "general",
+    "content": "It is important to know when to seek professional medical attention. You should consult a doctor if you experience symptoms lasting more than 3 days without improvement, sudden or severe pain anywhere in your body, unexplained weight loss, persistent fatigue or weakness, difficulty breathing at rest, or if you have a chronic condition that seems to be worsening. Do not delay seeking help if symptoms are severe or unusual — early intervention significantly improves outcomes.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "Talk to an Online Doctor", "targetDomain": "contacts" },
+        { "label": "Submit a Support Ticket", "targetDomain": "service_desk" }
+      ]
+    }
+  },
+  {
+    "documentId": "gen-004",
+    "title": "Preventive Healthcare and Routine Checkups",
+    "domain": "general",
+    "content": "Preventive care is one of the most effective ways to protect your health. Routine checkups allow doctors to identify risk factors before they become serious conditions. Recommended screenings include blood pressure checks, cholesterol tests, blood glucose tests for diabetes risk, vision and hearing assessments, and cancer screenings appropriate for your age group. XCare offers several medical packages designed to cover these preventive tests comprehensively for different age groups.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "View Our Packages", "targetDomain": "medical_package" },
+        { "label": "Book an Appointment", "targetDomain": "contacts" }
+      ]
+    }
+  },
+  {
+    "documentId": "gen-005",
+    "title": "Mental Health and Wellness",
+    "domain": "general",
+    "content": "Mental health is an essential component of overall wellbeing. Common conditions such as stress, anxiety, and depression affect millions of people worldwide and can manifest physically as headaches, fatigue, insomnia, or digestive issues. Recognizing the signs early and seeking help from a qualified professional is crucial. Strategies for maintaining mental wellness include regular physical activity, mindfulness or meditation, maintaining social connections, setting healthy boundaries, and getting adequate rest. If you are experiencing persistent low mood or overwhelming anxiety, please speak with one of our healthcare professionals.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "Talk to a Doctor", "targetDomain": "contacts" },
+        { "label": "View Symptoms Guide", "targetDomain": "symptoms" }
+      ]
+    }
+  }
+]

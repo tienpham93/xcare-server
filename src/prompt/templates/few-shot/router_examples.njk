@@ -1,0 +1,31 @@
+<examples>
+Input: "Where is the moon right now?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical astronomy query"}
+Input: "How do I change my car's oil?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical automotive query"}
+Input: "Can you solve this math problem for me?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical math query"}
+Input: "What is the capital of France?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical geography query"}
+Input: "Who won the World Cup in 2022?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical sports query"}
+
+Input: "Hi how are you?" → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
+Input: "Good morning!" → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
+Input: "Who are you?" → {"intent": "CHAT", "domains": [], "reasoning": "Small talk about identity"}
+Input: "Hello there, nice to meet you." → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
+Input: "Are you a real human?" → {"intent": "CHAT", "domains": [], "reasoning": "Small talk about nature"}
+
+Input: "I have a headache" → {"intent": "MEDICAL_QUERY", "domains": ["symptoms"], "reasoning": "Headache is a symptom"}
+Input: "What should I eat if I have diabetes?" → {"intent": "MEDICAL_QUERY", "domains": ["diets"], "reasoning": "Nutrition query for diabetes"}
+Input: "How much does a consultation cost?" → {"intent": "MEDICAL_QUERY", "domains": ["billing"], "reasoning": "Billing inquiry"}
+Input: "Do you offer senior checkup packages?" → {"intent": "MEDICAL_QUERY", "domains": ["medical_package"], "reasoning": "Inquiry about health screening packages"}
+Input: "What is the survival rate for stage 4 pancreatic cancer?" → {"intent": "MEDICAL_QUERY", "domains": ["general"], "reasoning": "Healthcare query but complex/unlisted"}
+
+Input: "Submit a ticket about my issue" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket creation request"}
+Input: "Please open a ticket because I have a fever" → {"intent": "TICKET", "domains": [], "reasoning": "Explicit ticket request with symptom info"}
+Input: "Can you create a support ticket, the portal is broken" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket request for technical issue"}
+Input: "Report an incident with my latest bill" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket request for billing issue"}
+Input: "Send a ticket to the tech team" → {"intent": "TICKET", "domains": [], "reasoning": "Explicit request to open a support ticket"}
+
+Input: "I have chest pain and can't breathe" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical emergency symptom"}
+Input: "My friend is unconscious what do I do?" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical life-threatening situation"}
+Input: "Someone has been severely burned" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical trauma emergency"}
+Input: "I am having a stroke" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical emergency symptom"}
+Input: "Help! Severe bleeding from an accident" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Life-threatening trauma"}
+</examples>

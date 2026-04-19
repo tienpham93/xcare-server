@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { OllamaResponse } from '../types';
 import { logger } from '../utils/logger';
-import { ollamaService, serverHost } from '../server';
+import { serverHost } from '../env';
+import { ollamaService } from '../server';
 import { AuthService } from '../services/authService';
 import { parseAnswer } from '../utils/stringFormat';
 import { agentGraph } from '../services/graph/agentGraph';
@@ -98,7 +99,12 @@ export const postGenerateHandler = async (
         res.json({
             sessionId: sessionId,
             conversation: botResponse,
-            debug: evalMetadata // New field for professional evaluation
+            debug: {
+                ...evalMetadata,
+                intent: graphResult.intent,
+                domains: graphResult.domains,
+                contextStatus: graphResult.contextStatus,
+            }
         });
     } catch (error) {
         logger.error('Failed to prompt via LangGraph:', error);

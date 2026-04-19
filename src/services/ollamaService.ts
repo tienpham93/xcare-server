@@ -4,7 +4,7 @@ import { logger } from "../utils/logger";
 import { ChatOllama } from "@langchain/ollama";
 import { promptGenerator } from "../prompt/promptFactory";
 import { parseAnswer } from "../utils/stringFormat";
-import { serverHost } from "../server";
+import { serverHost } from "../env";
 import { HumanMessage } from "@langchain/core/messages";
 
 export class OllamaService {
@@ -49,10 +49,16 @@ export class OllamaService {
             const completePrompt = await promptGenerator("router", prompt, []);
             const response = await this.llm.invoke([new HumanMessage(completePrompt)]);
             const parsed = parseAnswer(response.content as string);
-            return parsed.intent ? parsed : { intent: "MEDICAL_QUERY", domains: ["general"], reasoning: "fallback" };
+            
+            // If it's a CHAT intent, we ensure domains are empty to avoid irrelevant retrieval
+            if (parsed.intent === "CHAT") {
+                parsed.domains = [];
+            }
+            
+            return parsed.intent ? parsed : { intent: "MEDICAL_QUERY", domains: [], reasoning: "fallback" };
         } catch (error) {
             logger.error("Error in classifyIntent", error);
-            return { intent: "MEDICAL_QUERY", domains: ["general"], reasoning: "error fallback" };
+            return { intent: "MEDICAL_QUERY", domains: [], reasoning: "error fallback" };
         }
     }
 
@@ -77,7 +83,7 @@ export class OllamaService {
                 username,
                 intent
             );
-
+            console.log('>>>>>> general completePrompt', completePrompt)
             const response = await this.llm.invoke([
                 new HumanMessage(completePrompt)
             ]);

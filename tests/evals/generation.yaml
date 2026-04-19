@@ -1,0 +1,96 @@
+# ============================================================
+# GENERATION SUITE
+# Tests that validate the LLM generation quality:
+# - Is the answer semantically correct and medically accurate?
+# - Does it refuse off-topic or irrelevant queries?
+# - Does it handle conversational (non-RAG) prompts gracefully?
+# These use llm-rubric to judge quality with Llama3 as judge.
+# ============================================================
+
+- description: "[GENERATION] Symptoms - Medical accuracy of headache advice"
+  vars:
+    test_name: "GENERATION_001 | Symptom Accuracy"
+    username: "tienpham"
+    request: "I have a persistent headache and I'm worried."
+  assert:
+    # Response must be in the expected JSON format
+    - type: "icontains"
+      value: "answer"
+    - type: "icontains"
+      value: "suggested_actions"
+    - type: "javascript"
+      value: "output.length > 50"
+    # Strict validation: Checks facts presented without enforcing rigid string matching
+    - type: "factuality"
+      value: "Headache is a mild symptom. Recommended treatments include rest, adequate hydration, and Vitamin C. If symptoms persist for more than 3 days or worsen, the patient should visit a clinic or hospital for support."
+
+- description: "[GENERATION] Billing - Price information accuracy"
+  vars:
+    test_name: "GENERATION_002 | Billing Accuracy"
+    username: "tienpham"
+    request: "How much does a consultation with a doctor cost?"
+  assert:
+    - type: "javascript"
+      value: 'output.includes("$") || output.toLowerCase().includes("free")'
+    # Semantic similarity scoring: Requires 80% embedding match for billing specifics
+    - type: "similar"
+      threshold: 0.80
+      value: "Offline physical consultations with a doctor cost from approximately $100 to $200 per visit. Endoscopy fees range from approximately $200 to $1000. General surgeries cost between approximately $1000 to $10000."
+      provider: "ollama:embeddings:mxbai-embed-large:335m"
+
+- description: "[GENERATION] Emergency - Appropriate handover behavior"
+  vars:
+    test_name: "GENERATION_003 | Emergency Handover"
+    username: "tienpham"
+    request: "Emergency! I need help right now!"
+  assert:
+    - type: "icontains"
+      value: "technician"
+    - type: "javascript"
+      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+    - type: "llm-rubric"
+      value: "The response reassures the user and indicates that a technician or support staff will assist them shortly. It does not attempt to answer medically."
+
+- description: "[GENERATION] Anti-Hallucination - Refuses irrelevant query"
+  vars:
+    test_name: "GENERATION_004 | Anti-Hallucination"
+    username: "tienpham"
+    request: "Where is the moon right now?"
+  assert:
+    # Bot must NOT hallucinate medical/billing KB content for an astronomy question
+    - type: "not-icontains"
+      value: "Vitamin C"
+    - type: "not-icontains"
+      value: "headache"
+    - type: "not-icontains"
+      value: "$100"
+    # Semantic quality: LLM judge verifies the response is a polite refusal
+    - type: "llm-rubric"
+      value: "The response declines to answer the off-topic astronomy question. It does not provide false medical information. The response is polite and redirects the user appropriately."
+
+- description: "[GENERATION] Greeting - Friendly small talk (no RAG needed)"
+  vars:
+    test_name: "GENERATION_005 | Chat Mode"
+    username: "tienpham"
+    request: "Hello! How are you today?"
+  assert:
+    - type: "javascript"
+      value: "output.length > 10"
+    # Should respond as a friendly assistant, NOT redirect to service desk
+    - type: "not-icontains"
+      value: "service desk"
+    - type: "not-icontains"
+      value: "I am connecting"
+    - type: "llm-rubric"
+      value: "The response is a friendly, conversational greeting. It does not attempt to answer a medical question and does not redirect the user unnecessarily."
+
+- description: "[GENERATION] Missing KB - Semantic Check for Medical Handover"
+  vars:
+    test_name: "GENERATION_006 | Missing Knowledge Semantic Handover"
+    username: "tienpham"
+    request: "What is the recommended treatment plan for Huntington's Disease?"
+  assert:
+    - type: "javascript"
+      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+    - type: "llm-rubric"
+      value: "The response politely informs the user that the query is outside their current knowledge and directs them to the service desk team without hallucinating any medical advice."

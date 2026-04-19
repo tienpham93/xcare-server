@@ -51,15 +51,20 @@ export class KnowledgeBase {
     /**
      * Initializes (or re-ingests) the knowledge base.
      * Populates both structured Rules (relational) and unstructured Chunks (vector).
+     * @param sourcePath Path to the JSON knowledge seeds
+     * @param force If true, clears existing data before ingestion
      */
-    public async initializeKnowledgeBase(sourcePath: string): Promise<void> {
+    public async initializeKnowledgeBase(sourcePath: string, force: boolean = false): Promise<void> {
         try {
             logger.info('--- Initializing Hybrid Knowledge Base ---');
             
-            // 1. Clear existing data
-            await prisma.knowledgeRule.deleteMany({});
-            // LangChain's PGVectorStore doesn't have an easy "deleteAll", so we use raw SQL via Prisma
-            await prisma.$executeRawUnsafe('TRUNCATE TABLE knowledge_embeddings CASCADE;');
+            if (force) {
+                logger.info('Force re-initialization requested. Clearing existing knowledge...');
+                // 1. Clear existing data
+                await prisma.knowledgeRule.deleteMany({});
+                // LangChain's PGVectorStore doesn't have an easy "deleteAll", so we use raw SQL via Prisma
+                await prisma.$executeRawUnsafe('TRUNCATE TABLE knowledge_embeddings CASCADE;');
+            }
 
             const files = await fs.promises.readdir(sourcePath);
             const jsonFiles = files.filter(file => file.endsWith('.json'));
@@ -74,8 +79,16 @@ export class KnowledgeBase {
 
             // 2. Populate Relational Rules (for visibility and strict workflows)
             for (const k of allKnowledge) {
-                await prisma.knowledgeRule.create({
-                    data: {
+                await prisma.knowledgeRule.upsert({
+                    where: { documentId: k.documentId },
+                    update: {
+                        title: k.title,
+                        domain: k.domain,
+                        content: k.content,
+                        metadata: k.metadata || {},
+                        isActive: true
+                    },
+                    create: {
                         documentId: k.documentId,
                         title: k.title,
                         domain: k.domain,
@@ -138,33 +151,58 @@ export class KnowledgeBase {
             const domainFilter = domains && domains.length > 0 ? { in: domains } : undefined;
 
             // Path 1: Strict Rule Lookup (Deterministic)
-            // We search for rules where the title or ANY word in the text matches the rule content/title
-            const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+            // Keywords are high-intent. We make this DOMAIN-AGNOSTIC but exclude common stop-words.
+            const stopWords = new Set([
+                'where', 'when', 'what', 'which', 'who', 'how', 'there', 'their', 'this', 'that', 
+                'with', 'from', 'should', 'could', 'would', 'your', 'have', 'been', 'will', 'shall',
+                'much', 'does', 'into', 'onto', 'than', 'then', 'they'
+            ]);
+            
+            const cleanedText = text.toLowerCase().replace(/[?!.,;:]/g, ' ');
+            const words = cleanedText.split(/\s+/).filter(w => w.length >= 4 && !stopWords.has(w));
+            // Only longer words (6+ chars) are specific enough for content matching
+            const contentWords = words.filter(w => w.length >= 6);
             logger.info(`Analyzing words for strict match: [${words.join(', ')}]`);
             
-            const strictRules = await prisma.knowledgeRule.findMany({
+            let strictRules = await prisma.knowledgeRule.findMany({
                 where: {
                     isActive: true,
-                    domain: domainFilter,
+                    // Only match against the title for strict deterministic rules to avoid false positives
                     OR: [
                         { title: { in: words, mode: 'insensitive' } },
                         { title: { contains: text, mode: 'insensitive' } },
-                        // Check if any of our trigger words are in the content
                         ...words.map(word => ({
+                            title: { contains: word, mode: 'insensitive' as Prisma.QueryMode }
+                        })),
+                        // Only match content for specific long words (>=6 chars) to avoid false positives
+                        ...contentWords.map(word => ({
                             content: { contains: word, mode: 'insensitive' as Prisma.QueryMode }
                         }))
                     ]
                 },
-                take: 3
+                take: 20 // Fetch a larger batch for sorting
             });
 
             if (strictRules.length > 0) {
-                logger.info(`Matched ${strictRules.length} strict rules via priority lookup`);
-                strictRules.forEach(r => {
-                    const matchSource = words.find(w => r.content.toLowerCase().includes(w)) || 'title/text match';
-                    logger.info(`  [MATCH] Rule ID ${r.id} (${r.title}) triggered by: "${matchSource}"`);
+                // Smart Sort: 
+                // 1. Prefer results that match the predicted domain
+                // 2. Prefer Title matches over Content matches
+                strictRules.sort((a, b) => {
+                    const aMatchesDomain = domains?.includes(a.domain) ? 1 : 0;
+                    const bMatchesDomain = domains?.includes(b.domain) ? 1 : 0;
+                    if (aMatchesDomain !== bMatchesDomain) return bMatchesDomain - aMatchesDomain;
+
+                    const aTitleMatch = words.some(w => a.title.toLowerCase().includes(w)) ? 1 : 0;
+                    const bTitleMatch = words.some(w => b.title.toLowerCase().includes(w)) ? 1 : 0;
+                    if (aTitleMatch !== bTitleMatch) return bTitleMatch - aTitleMatch;
+                    
+                    return 0;
                 });
-                return strictRules.map((r: KnowledgeRule) => ({
+
+                const topRules = strictRules.slice(0, 5);
+                logger.info(`Matched ${strictRules.length} strict rules. Top match: ${topRules[0].title} (${topRules[0].domain})`);
+
+                return topRules.map((r: KnowledgeRule) => ({
                     documentId: r.documentId,
                     title: r.title,
                     domain: r.domain,

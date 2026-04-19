@@ -1,4 +1,4 @@
-import { serverHost } from "../server";
+import { serverHost } from "../env";
 import { SearchResult, User } from "../types";
 import nunjucks from "nunjucks";
 import path from "path";

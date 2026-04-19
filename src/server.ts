@@ -2,12 +2,11 @@ import { OllamaService } from './services/ollamaService';
 import { logger } from './utils/logger';
 import express from 'express';
 import router from './router';
-import { ollamaPort, expressPort } from './env';
+import { ollamaPort, expressPort, ollamaHost, serverHost } from './env';
 import { KnowledgeBase } from './services/RAGservice/knowledgeBase';
 
 const app = express();
-export const ollamaHost = `http://127.0.0.1:${ollamaPort}`;
-export const serverHost = `http://localhost:${expressPort}`;
+
 
 // Initialize the Ollama service
 export const ollamaService = new OllamaService(ollamaHost);
@@ -39,7 +38,11 @@ app.use(express.json());
 })();
 
 app.use(router);
-app.listen(expressPort, () => {    
-    logger.info(`Express is running at ${serverHost}`);
-    logger.info(`Model ${ollamaService.modelConfig.name} is running at localhost:${ollamaPort}`);
-});
+
+// Only start the server if not in test mode to avoid port conflicts during integration testing
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(expressPort, () => {    
+        logger.info(`Express is running at ${serverHost}`);
+        logger.info(`Model ${ollamaService.modelConfig.name} is running at localhost:${ollamaPort}`);
+    });
+}

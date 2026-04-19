@@ -24,6 +24,7 @@ For detailed information regarding the startup's mission, target audience, and k
 | Orchestration | LangGraph + LangChain |
 | LLM | Ollama (`llama3` default) |
 | Embeddings | Ollama (`mxbai-embed-large`) |
+| Evaluation | Promptfoo (`llama3.1` judge) |
 | Templating | Nunjucks |
 | Vector Storage | pgvector (via PostgreSQL) |
 | ORM | Prisma 7 |
@@ -189,12 +190,31 @@ graph TD
 ```
 
 ### Intent Types
-| Intent | Trigger | Behavior |
+## 🧪 Testing Architecture
+
+We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into our testing philosophy, setup, and troubleshooting, see the **[Testing Documentation](./docs/TEST.md)**.
+
+### Quick Commands
+| Type | Target | Command |
 |---|---|---|
-| `CHAT` | Greetings (`hi`, `hello`, etc.) | Fast-path — bypasses retrieval |
-| `TICKET` | `messageType=submit` from UI | Fast-path — routes to ticket extraction |
-| `MEDICAL_QUERY` | General health questions | Full RAG retrieval + LLM generation |
-| `EMERGENCY` | SOS/emergency keywords | Deterministic strict answer + human alert |
+| **Logic** | Unit Tests | `bun test tests/unit` |
+| **Connectivity**| Integration Tests| `bun test tests/integration` |
+| **AI Accuracy** | Promptfoo Evals | `bun run test:eval` |
+| **Full Suite** | All Tests | `bun run test:all` |
+
+---
+
+## 🛠 Lessons & Architecture Decisions
+- **Document-Centric RAG**: We transitioned from keyword rules to a structured `id/title/content/metadata` schema to improve semantic search precision.
+- **TICKET Precedence**: The router is explicitly tuned to prioritize ticket submission keywords over medical symptom matching, ensuring a smooth user experience for support requests.
+- **Suggested Actions**: Metadata-driven quick replies are now first-class citizens in the AI response, allowing for a more interactive and proactive UI.
+
+---
+
+## Notes and Caveats
+- **Port 5002**: The server and tests use port `5002`. If tests fail with "Address in use", run `lsof -ti:5002 | xargs kill -9`.
+- **Ollama Models**: Ensure `llama3`, `llama3.1`, and `mxbai-embed-large` are installed locally via `ollama pull`. The evaluation pipeline will attempt to download them implicitly if missing.
+- **JWT Security**: The secret is currently hardcoded for development. Move to `JWT_SECRET` in `.env` for production.
 
 ---
 
