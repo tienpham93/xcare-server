@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "XCare Bot Response Schema",
+  "type": "object",
+  "required": [
+    "answer", 
+    "isManIntervention", 
+    "suggested_actions"
+  ],
+  "properties": {
+    "answer": {
+      "type": "string",
+      "description": "The textual response to the user's query."
+    },
+    "isManIntervention": {
+      "type": "boolean",
+      "description": "Flags whether a human technician is needed."
+    },
+    "suggested_actions": {
+      "type": "array",
+      "description": "UI quick-reply suggestions for the user.",
+      "items": {
+        "type": "object",
+        "required": ["label", "targetDomain"],
+        "properties": {
+          "label": { "type": "string" },
+          "targetDomain": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

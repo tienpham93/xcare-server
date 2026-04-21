@@ -14,7 +14,7 @@
 
 - description: "[RETRIEVAL|symptoms] Mild — headache maps to symp-001"
   vars:
-    test_name: "SYM_001 | Mild Symptom - Headache"
+    test_name: "RETRIEVAL_SYMPTOMS_001 | Mild Symptom - Headache"
     username: "tienpham"
     request: "I have a persistent headache and I'm worried."
   assert:
@@ -29,7 +29,7 @@
 
 - description: "[RETRIEVAL|symptoms] Mild — fever and cold maps to symp-001"
   vars:
-    test_name: "SYM_002 | Mild Symptom - Fever & Cold"
+    test_name: "RETRIEVAL_SYMPTOMS_002 | Mild Symptom - Fever & Cold"
     username: "tienpham"
     request: "I have a fever and a cold. What should I do?"
   assert:
@@ -40,7 +40,7 @@
 
 - description: "[RETRIEVAL|symptoms] Mild — 3-day threshold from symp-001"
   vars:
-    test_name: "SYM_003 | Mild Symptom - Duration Guidance"
+    test_name: "RETRIEVAL_SYMPTOMS_003 | Mild Symptom - Duration Guidance"
     username: "tienpham"
     request: "I have been feeling dizzy and nauseous for a few days."
   assert:
@@ -51,7 +51,7 @@
 
 - description: "[RETRIEVAL|symptoms] Critical — accident maps to symp-002"
   vars:
-    test_name: "SYM_004 | Critical Symptom - Accident"
+    test_name: "RETRIEVAL_SYMPTOMS_004 | Critical Symptom - Accident"
     username: "tienpham"
     request: "I was just in a car accident and I am in pain."
   assert:
@@ -62,7 +62,7 @@
 
 - description: "[RETRIEVAL|symptoms] Critical — heart attack maps to symp-002"
   vars:
-    test_name: "SYM_005 | Critical Symptom - Heart Attack"
+    test_name: "RETRIEVAL_SYMPTOMS_005 | Critical Symptom - Heart Attack"
     username: "tienpham"
     request: "I think I am having a heart attack. My chest hurts badly."
   assert:
@@ -73,7 +73,7 @@
 
 - description: "[RETRIEVAL|symptoms] Critical — broken bone maps to symp-002"
   vars:
-    test_name: "SYM_006 | Critical Symptom - Broken Limb"
+    test_name: "RETRIEVAL_SYMPTOMS_006 | Critical Symptom - Broken Limb"
     username: "tienpham"
     request: "I fell and I think my arm is broken. It is very swollen."
   assert:

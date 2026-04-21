@@ -15,7 +15,7 @@
 
 - description: "[RETRIEVAL|contacts] Appointment booking maps to contact-001"
   vars:
-    test_name: "CON_001 | Booking Appointment"
+    test_name: "RETRIEVAL_CONTACTS_001 | Booking Appointment"
     username: "tienpham"
     request: "How do I book an appointment with a doctor?"
   assert:
@@ -26,7 +26,7 @@
 
 - description: "[RETRIEVAL|contacts] Complaints email uniquely in contact-002"
   vars:
-    test_name: "CON_002 | Feedback and Complaints"
+    test_name: "RETRIEVAL_CONTACTS_002 | Feedback and Complaints"
     username: "tienpham"
     request: "How do I report a bad experience or complain about service?"
   assert:
@@ -37,7 +37,7 @@
 
 - description: "[RETRIEVAL|contacts] Hospital address uniquely in contact-003"
   vars:
-    test_name: "CON_003 | Hospital Location"
+    test_name: "RETRIEVAL_CONTACTS_003 | Hospital Location"
     username: "tienpham"
     request: "Where is the XCare clinic located?"
   assert:
@@ -48,7 +48,7 @@
 
 - description: "[RETRIEVAL|contacts] Website uniquely in contact-001"
   vars:
-    test_name: "CON_004 | XCare Website"
+    test_name: "RETRIEVAL_CONTACTS_004 | XCare Website"
     username: "tienpham"
     request: "What is the XCare official website?"
   assert:

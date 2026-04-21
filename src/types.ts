@@ -4,6 +4,17 @@ export interface ChatMessage {
     content: string;
 }
 
+export interface SuggestedAction {
+    label: string;
+    targetDomain: string;
+}
+
+export interface BotResult {
+    answer: string;
+    isManIntervention: boolean;
+    suggested_actions: SuggestedAction[];
+}
+
 export interface ChatResponse {
     success: boolean;
     response?: string;

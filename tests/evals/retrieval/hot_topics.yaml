@@ -1,6 +1,6 @@
 # ============================================================
 # RETRIEVAL SUITE — Hot Topics Domain
-# Ground Truth Source: prisma/seeds/knowledge/hot_topics.json
+# Ground Truth Source: prisma/seeds/knowledge/RETRIEVAL_HOT_TOPICS_topics.json
 #   hot-topic-001: "Symptoms of Covid-19"
 #     - Fever, cough, shortness of breath, fatigue, body aches
 #     - Loss of taste or smell, sore throat, congestion
@@ -13,7 +13,7 @@
 
 - description: "[RETRIEVAL|hot_topics] Covid symptom list — maps to hot-topic-001"
   vars:
-    test_name: "HOT_001 | Covid-19 Symptoms"
+    test_name: "RETRIEVAL_HOT_TOPICS_001 | Covid-19 Symptoms"
     username: "tienpham"
     request: "What are the symptoms of Covid-19?"
   assert:
@@ -24,7 +24,7 @@
 
 - description: "[RETRIEVAL|hot_topics] Covid prevention — maps to hot-topic-002"
   vars:
-    test_name: "HOT_002 | Covid-19 Prevention"
+    test_name: "RETRIEVAL_HOT_TOPICS_002 | Covid-19 Prevention"
     username: "tienpham"
     request: "How can I prevent getting Covid-19?"
   assert:
@@ -35,7 +35,7 @@
 
 - description: "[RETRIEVAL|hot_topics] Taste/smell loss — maps to hot-topic-001"
   vars:
-    test_name: "HOT_003 | Covid - Loss of Taste"
+    test_name: "RETRIEVAL_HOT_TOPICS_003 | Covid - Loss of Taste"
     username: "tienpham"
     request: "I lost my sense of taste and smell. Could this be Covid?"
   assert:

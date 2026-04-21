@@ -10,6 +10,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { PoolConfig } from "pg";
 import prisma from "../prismaClient";
 import { KnowledgeRule, Prisma } from "@prisma/client";
+import { STOP_WORDS } from "../../constants/stopwords";
 
 const pgVectorConfig: { postgresConnectionOptions: PoolConfig; tableName: string } = {
     postgresConnectionOptions: {
@@ -152,14 +153,8 @@ export class KnowledgeBase {
 
             // Path 1: Strict Rule Lookup (Deterministic)
             // Keywords are high-intent. We make this DOMAIN-AGNOSTIC but exclude common stop-words.
-            const stopWords = new Set([
-                'where', 'when', 'what', 'which', 'who', 'how', 'there', 'their', 'this', 'that', 
-                'with', 'from', 'should', 'could', 'would', 'your', 'have', 'been', 'will', 'shall',
-                'much', 'does', 'into', 'onto', 'than', 'then', 'they'
-            ]);
-            
             const cleanedText = text.toLowerCase().replace(/[?!.,;:]/g, ' ');
-            const words = cleanedText.split(/\s+/).filter(w => w.length >= 4 && !stopWords.has(w));
+            const words = cleanedText.split(/\s+/).filter(w => w.length >= 4 && !STOP_WORDS.has(w));
             // Only longer words (6+ chars) are specific enough for content matching
             const contentWords = words.filter(w => w.length >= 6);
             logger.info(`Analyzing words for strict match: [${words.join(', ')}]`);

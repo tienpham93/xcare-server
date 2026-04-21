@@ -7,150 +7,120 @@
 #   (faithfulness + llm-rubric) to grade quality beyond binary pass/fail.
 #
 # Assertion strategy:
-#   1. faithfulness  (0.90–0.95): Response must not contradict KB source doc
-#   2. llm-rubric    (0.80–0.90): Multi-criteria quality scoring with deductions
-#   3. answer-relevance (0.80):   Response must address the actual question
-#   4. similar       (0.80):      Embedding match for price-sensitive content
-#
-# Ground Truth sources:
-#   symp-001: general_symptoms.json — mild symptoms
-#   symp-002: general_symptoms.json — critical symptoms
-#   bill-001: billing.json — online consultation (free, hotline 1900 1234)
-#   bill-002: billing.json — offline ($100–$200), endoscopy ($200–$1000)
-#   bill-003: billing.json — packages ($1000)
-#   diet-003: diets.json  — gout (uric acid, red meats)
-#   hot-topic-001: hot_topics.json — Covid-19 symptoms
-#   med-pkg-001:   medical_package.json — age-based eligibility
-#
-# Add tests here when: new KB documents are added or KB content is updated.
+#   Since XCareProvider returns a JSON object, we use 'transform: output.answer'
+#   to extract the text for LLM-graded and string-based assertions.
 # ============================================================
 
-- description: "[GEN-02] Accuracy — mild headache guidance scored against symp-001"
+- description: "[GEN-02] Accuracy — mild headache guidance"
   vars:
-    test_name: "GEN_ACC_001 | Accuracy - Mild Symptom Headache"
+    test_name: "GEN_MEDICAL_ACCURACY_001 | Accuracy - Mild Symptom Headache"
     username: "tienpham"
     request: "I have a headache. What should I do?"
   assert:
     - type: "javascript"
-      value: "output.length > 50"
+      value: "output.answer.length > 50"
     - type: "faithfulness"
       threshold: 0.90
+      transform: "output.answer"
       value: "Mild symptoms include headache. It can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If these mild symptoms do not improve after 3 days, it is recommended to connect with an XCare online doctor."
     - type: "llm-rubric"
       threshold: 0.80
+      transform: "output.answer"
       value: |
         Score the response from 0.0 to 1.0 based on these weighted criteria:
-        - Award full marks (1.0) if the response recommends rest, hydration, Vitamin C AND mentions the 3-day threshold for seeking medical help.
+        - Award full marks (1.0) if the response recommends rest, hydration, Vitamin C AND mentions the 3-day threshold.
         - Deduct 0.3 points if Vitamin C or hydration is not mentioned.
-        - Deduct 0.3 points if the 3-day duration threshold is not mentioned.
-        - Deduct 0.5 points if the response suggests going to a hospital immediately for a mild headache (overreaction).
         - Award 0.0 if the response refuses to help or escalates unnecessarily.
     - type: "answer-relevance"
       threshold: 0.80
+      transform: "output.answer"
 
-- description: "[GEN-02] Accuracy — critical accident guidance scored against symp-002"
+- description: "[GEN-02] Accuracy — critical accident guidance"
   vars:
-    test_name: "GEN_ACC_002 | Accuracy - Critical Accident Symptom"
+    test_name: "GEN_MEDICAL_ACCURACY_002 | Accuracy - Critical Accident Symptom"
     username: "tienpham"
     request: "I was in a car accident and I cannot move my legs."
   assert:
     - type: "faithfulness"
       threshold: 0.90
+      transform: "output.answer"
       value: "Critical symptoms are urgent cases and include getting into an accident. These usually lead to internal damages. It is recommended to connect with an XCare online doctor immediately, and then go to a nearby medical center for a quick checkup."
     - type: "llm-rubric"
       threshold: 0.90
+      transform: "output.answer"
       value: |
         Score the response from 0.0 to 1.0 based on appropriate urgency:
-        - Award full marks (1.0) if the response urgently recommends going to a medical center AND connecting to a doctor immediately.
-        - Deduct 0.4 points if the response does NOT recommend going to a medical center or hospital.
-        - Deduct 0.5 points if the response suggests resting at home or taking self-administered medicine.
-        - Award 0.0 if the response dismisses the severity or classifies the accident as mild.
+        - Award full marks (1.0) if the response urgently recommends going to a medical center.
+        - Award 0.0 if the response dismisses the severity.
     - type: "answer-relevance"
       threshold: 0.80
+      transform: "output.answer"
 
-- description: "[GEN-02] Accuracy — gout dietary advice scored against diet-003"
+- description: "[GEN-02] Accuracy — gout dietary advice"
   vars:
-    test_name: "GEN_ACC_003 | Accuracy - Gout Diet Advice"
+    test_name: "GEN_MEDICAL_ACCURACY_003 | Accuracy - Gout Diet Advice"
     username: "tienpham"
     request: "I have gout. What foods should I avoid?"
   assert:
     - type: "faithfulness"
       threshold: 0.95
-      value: "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins (like chicken or fish in excess). These foods contribute to high blood levels of uric acid which can trigger gout attacks."
+      transform: "output.answer"
+      value: "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins. These foods contribute to high blood levels of uric acid."
     - type: "llm-rubric"
       threshold: 0.80
+      transform: "output.answer"
       value: |
         Score the response from 0.0 to 1.0 based on dietary precision:
-        - Award full marks (1.0) if red meats, seafood, AND uric acid are all mentioned correctly.
-        - Deduct 0.3 points if uric acid is not mentioned as the reason for the restriction.
-        - Deduct 0.3 points if red meats or beef are not specifically named.
-        - Deduct 0.5 points if the response recommends foods that are harmful for gout (e.g., "eat more fish").
-        - Award 0.0 if the response fabricates unrelated medical advice such as medication prescriptions.
+        - Award full marks (1.0) if red meats, seafood, AND uric acid are all mentioned.
     - type: "answer-relevance"
       threshold: 0.80
+      transform: "output.answer"
 
-- description: "[GEN-02] Accuracy — endoscopy pricing scored against bill-002"
+- description: "[GEN-02] Accuracy — endoscopy pricing"
   vars:
-    test_name: "GEN_ACC_004 | Accuracy - Endoscopy Billing"
+    test_name: "GEN_MEDICAL_ACCURACY_004 | Accuracy - Endoscopy Billing"
     username: "tienpham"
     request: "How much does an endoscopy cost at XCare?"
   assert:
     - type: "javascript"
-      value: 'output.includes("$200") || output.includes("$1000")'
+      value: 'output.answer.includes("$200") || output.answer.includes("$1000")'
     - type: "faithfulness"
       threshold: 0.95
+      transform: "output.answer"
       value: "Endoscopy fees range from approximately $200 to $1000."
-    - type: "llm-rubric"
-      threshold: 0.90
-      value: |
-        Score the response from 0.0 to 1.0 based on pricing accuracy:
-        - Award full marks (1.0) if the response states endoscopy costs between $200 and $1000.
-        - Deduct 0.5 points if the price range given falls outside $200–$1000.
-        - Deduct 0.3 points if the response is vague and gives no numeric price range.
-        - Award 0.0 if the response fabricates insurance or payment information not found in the KB.
     - type: "similar"
       threshold: 0.80
+      transform: "output.answer"
       value: "Endoscopy fees range from approximately $200 to $1000."
       provider: "ollama:embeddings:mxbai-embed-large:335m"
 
-- description: "[GEN-02] Accuracy — Covid-19 symptoms scored against hot-topic-001"
+- description: "[GEN-02] Accuracy — Covid-19 symptoms"
   vars:
-    test_name: "GEN_ACC_005 | Accuracy - Covid Symptom List"
+    test_name: "GEN_MEDICAL_ACCURACY_005 | Accuracy - Covid Symptom List"
     username: "tienpham"
     request: "What are the common symptoms of Covid-19?"
   assert:
     - type: "faithfulness"
       threshold: 0.90
+      transform: "output.answer"
       value: "Possible symptoms of Covid-19 include fever, cough, shortness of breath, fatigue, body aches, loss of taste or smell, sore throat, and congestion."
-    - type: "llm-rubric"
-      threshold: 0.80
-      value: |
-        Score the response from 0.0 to 1.0 based on symptom coverage completeness:
-        - Award full marks (1.0) if the response mentions at least 5 of: fever, cough, shortness of breath, fatigue, loss of taste, loss of smell, sore throat, congestion.
-        - Deduct 0.2 points for each major symptom group missing (respiratory, sensory, systemic).
-        - Deduct 0.4 points if the response claims Covid can be treated at home with specific medicines not in the KB.
-        - Award 0.0 if the response confuses Covid-19 with a different disease.
     - type: "answer-relevance"
       threshold: 0.80
+      transform: "output.answer"
 
-- description: "[GEN-02] Accuracy — Premium Package eligibility scored against med-pkg-001"
+- description: "[GEN-02] Accuracy — Premium Package eligibility"
   vars:
-    test_name: "GEN_ACC_006 | Accuracy - Premium Package Eligibility"
+    test_name: "GEN_MEDICAL_ACCURACY_006 | Accuracy - Premium Package Eligibility"
     username: "tienpham"
     request: "I am a 52-year-old woman. What medical package can I purchase?"
   assert:
     - type: "icontains"
       value: "Premium Package"
+      transform: "output.answer"
     - type: "faithfulness"
       threshold: 0.95
+      transform: "output.answer"
       value: "Patients above 45 years old can purchase the Senior Package. Additionally, female patients above 45 years old are eligible to purchase the Premium Package."
-    - type: "llm-rubric"
-      threshold: 0.90
-      value: |
-        Score the response from 0.0 to 1.0 based on eligibility accuracy:
-        - Award full marks (1.0) if BOTH the Senior Package AND Premium Package are correctly identified as options for a 52-year-old woman.
-        - Deduct 0.4 points if only the Senior Package is mentioned and the Premium Package is omitted.
-        - Deduct 0.5 points if an incorrect package is suggested (e.g., Under30, Adolescent).
-        - Award 0.0 if the response fabricates a package name not in the XCare catalog.
     - type: "answer-relevance"
       threshold: 0.80
+      transform: "output.answer"

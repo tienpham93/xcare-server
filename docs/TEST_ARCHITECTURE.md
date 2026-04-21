@@ -22,6 +22,9 @@ graph TD
     end
     
     subgraph Layer 3: Intelligence
+        Eval[RAG Evaluations]
+    end
+    
     API --> |Validates End-to-End| Eval
 ```
 
@@ -60,14 +63,14 @@ graph TD
     OllService -- "fetch('/agent/submit')" --> MockFetch{Mock Global Fetch}
     MockLLM -- "Returns JSON String" --> OllService
     MockFetch -- "Returns 200 OK" --> OllService
-    OllService -- "parseAnswer()" --> Result[Structured JSON Response]
+    OllService -- "parseAnswer()" --> Result[BotResult JSON Object]
 ```
 
 #### C. KnowledgeBase Flow
 Tests the crucial **Priority Logic**: ensuring Hard-Coded matches take precedence over Semantic Search.
 ```mermaid
 graph TD
-    Test([unit/kb.unit.test.ts]) --> KB[KnowledgeBase]
+    Test([unit/knowledgeBase.unit.test.ts]) --> KB[KnowledgeBase]
     KB -- "prisma.findMany()" --> MockPrisma{Mock Database}
     KB -- "searchPath" --> MockVector{Mock PGVectorStore}
     
@@ -206,7 +209,9 @@ XCare uses a **4-tier assertion pyramid** for rigorous medical AI evaluation. A 
 | Suite | Cases | Target |
 |---|---|---|
 | Retrieval (all domains) | 31 | **100%** — binary, deterministic |
+| Generation — Format | 5 | **100%** — JSON Schema compliance |
 | Generation — Accuracy | 6 | ≥ 90% — faithfulness scored |
 | Generation — Anti-Hallucination | 4 | **100%** — binary OOS refusal |
-| Generation — Chat & Fallback | 4 | ≥ 85% — tone + routing |
+| Generation — Robustness | 4 | ≥ 90% — paraphrase resilience |
+| Generation — Chat & Fallback | 5 | ≥ 85% — tone + routing |
 | Generation — Medical Safety | 4 | **100%** — safety gates, threshold 1.0 |

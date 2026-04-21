@@ -18,7 +18,7 @@
 
 - description: "[RETRIEVAL|diets] Obesity cholesterol limit — maps to diet-001"
   vars:
-    test_name: "DIET_001 | Obesity Diet"
+    test_name: "RETRIEVAL_DIET_001 | Obesity Diet"
     username: "tienpham"
     request: "I am obese. What kind of diet should I follow?"
   assert:
@@ -29,7 +29,7 @@
 
 - description: "[RETRIEVAL|diets] Diabetes dairy warning — maps to diet-002"
   vars:
-    test_name: "DIET_002 | Diabetes Diet"
+    test_name: "RETRIEVAL_DIET_002 | Diabetes Diet"
     username: "tienpham"
     request: "I have diabetes. What foods should I avoid?"
   assert:
@@ -40,7 +40,7 @@
 
 - description: "[RETRIEVAL|diets] Gout uric acid trigger — maps to diet-003"
   vars:
-    test_name: "DIET_003 | Gout Diet"
+    test_name: "RETRIEVAL_DIET_003 | Gout Diet"
     username: "tienpham"
     request: "I suffer from gout. What dietary restrictions should I follow?"
   assert:
@@ -51,7 +51,7 @@
 
 - description: "[RETRIEVAL|diets] Gout — beef probe for diet-003"
   vars:
-    test_name: "DIET_004 | Gout - Red Meat Restriction"
+    test_name: "RETRIEVAL_DIET_004 | Gout - Red Meat Restriction"
     username: "tienpham"
     request: "Can I eat beef if I have gout?"
   assert:
@@ -62,7 +62,7 @@
 
 - description: "[RETRIEVAL|diets] Multiple diseases vegetarian — maps to diet-004"
   vars:
-    test_name: "DIET_005 | Multiple Disease Diet"
+    test_name: "RETRIEVAL_DIET_005 | Multiple Disease Diet"
     username: "tienpham"
     request: "I have multiple health conditions at the same time. What diet do you recommend?"
   assert:

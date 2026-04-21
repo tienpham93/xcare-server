@@ -24,9 +24,10 @@ The main configuration file is `promptfooconfig.yaml` in the project root.
 description: "XCare RAG Evaluation Suite"
 
 providers:
-  - id: "ollama:chat:llama3:8b" # The generator model
+  - id: "file://tests/evals/providers/xcare_provider.ts"
+    label: "XCare-Bot"
     options:
-      baseUrl: "http://localhost:11434"
+      url: "http://localhost:5002/agent/generate"
 
 defaultTest:
   options:
@@ -51,7 +52,8 @@ XCare uses a variety of assertion types provided by Promptfoo to validate differ
 Used for retrieval grounding and boundary checks.
 - `icontains`: Checks if the output contains a specific substring.
 - `not-icontains`: Checks if the output does NOT contain a specific substring.
-- `javascript`: Executes custom JS logic to validate complex conditions (e.g., JSON parsing).
+- `is-json`: Validates the entire output object against a centralized JSON schema.
+- `javascript`: Executes custom JS logic to validate complex conditions (e.g., specific field types).
 
 ### 2. Semantic Assertions (Similarity)
 Used for pricing and factual consistency.

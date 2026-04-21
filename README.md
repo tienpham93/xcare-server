@@ -190,6 +190,7 @@ graph TD
 ```
 
 ### Intent Types
+The agent handles 5 primary intents: `CHAT` (Greetings), `MEDICAL_QUERY` (RAG-based answers), `TICKET` (Automated extraction), `EMERGENCY` (SOS triggers), and `OUT_OF_SCOPE` (Deterministic refusal).
 ## 🧪 Testing Architecture
 
 We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into our testing philosophy, setup, and troubleshooting, see the **[Testing Blueprint](./docs/TEST_ARCHITECTURE.md)**.
@@ -197,8 +198,8 @@ We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into
 ### Quick Commands
 | Type | Target | Command |
 |---|---|---|
-| **Logic** | Unit Tests | `bun test tests/unit` |
-| **Connectivity**| Integration Tests| `bun test tests/integration` |
+| **Logic** | Unit Tests | `bun run test:unit` |
+| **Connectivity**| Integration Tests| `bun run test:integration` |
 | **AI Accuracy** | Promptfoo Evals | `bun run test:eval` |
 | **Full Suite** | All Tests | `bun run test:all` |
 
@@ -213,8 +214,10 @@ We use a **3-tier testing strategy** powered by `bun:test`. For a deep dive into
 
 ## Notes and Caveats
 - **Port 5002**: The server and tests use port `5002`. If tests fail with "Address in use", run `lsof -ti:5002 | xargs kill -9`.
-- **Ollama Models**: Ensure `llama3`, `llama3.1`, and `mxbai-embed-large` are installed locally via `ollama pull`. The evaluation pipeline will attempt to download them implicitly if missing.
+- **Ollama Models**: Ensure `llama3:8b`, `llama3.1:8b`, and `mxbai-embed-large:335m` are installed locally via `ollama pull`. The evaluation pipeline will attempt to download them implicitly if missing.
 - **JWT Security**: The secret is currently hardcoded for development. Move to `JWT_SECRET` in `.env` for production.
+- **Web Search**: The `web_search` node is scaffolded in the graph but currently disabled.
+- **PORT**: Environment variable can override the default server port (`5002`).
 
 ---
 
@@ -286,8 +289,3 @@ BASE_URL=http://localhost:5003 bun test tests/api.test.ts
 ```
 
 ---
-
-## Notes and Caveats
-- JWT secret is currently hardcoded in `src/services/authService.ts` — recommend moving to a `.env` secret.
-- The `web_search` node is scaffolded in the graph but currently disabled.
-- `PORT` environment variable can override the default server port (`5002`).

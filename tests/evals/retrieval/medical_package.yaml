@@ -16,7 +16,7 @@
 
 - description: "[RETRIEVAL|packages] Senior package — maps to med-pkg-001"
   vars:
-    test_name: "PKG_001 | Senior Health Package"
+    test_name: "RETRIEVAL_MEDICAL_PKG_001 | Senior Health Package"
     username: "tienpham"
     request: "I am 55 years old. What health screening package is right for me?"
   assert:
@@ -27,7 +27,7 @@
 
 - description: "[RETRIEVAL|packages] Under30 for 25-year-old — maps to med-pkg-001"
   vars:
-    test_name: "PKG_002 | Under30 Package Eligibility"
+    test_name: "RETRIEVAL_MEDICAL_PKG_002 | Under30 Package Eligibility"
     username: "tienpham"
     request: "I am 25 years old. Which medical package should I choose?"
   assert:
@@ -38,7 +38,7 @@
 
 - description: "[RETRIEVAL|packages] Adolescent Package — maps to med-pkg-001"
   vars:
-    test_name: "PKG_003 | Adolescent Package"
+    test_name: "RETRIEVAL_MEDICAL_PKG_003 | Adolescent Package"
     username: "tienpham"
     request: "What health packages do you offer for teenagers?"
   assert:
@@ -49,7 +49,7 @@
 
 - description: "[RETRIEVAL|packages] Pricing — maps to med-pkg-002"
   vars:
-    test_name: "PKG_004 | Package Pricing"
+    test_name: "RETRIEVAL_MEDICAL_PKG_004 | Package Pricing"
     username: "tienpham"
     request: "How much do your health screening packages cost?"
   assert:

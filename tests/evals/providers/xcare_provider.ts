@@ -1,5 +1,19 @@
 import axios from 'axios';
 import * as jwt from 'jsonwebtoken';
+import { BotResult } from '../../../src/types';
+
+/**
+ * Promptfoo Types (Simplified)
+ */
+export interface ProviderResponse {
+  output?: any;
+  error?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CallApiContext {
+  vars: Record<string, any>;
+}
 
 /**
  * Promptfoo Provider for XCare Assistant.
@@ -22,7 +36,7 @@ class XCareProvider {
     return 'xcare-assistant';
   }
 
-  async callApi(promptText: string, context: any) {
+  async callApi(promptText: string, context: CallApiContext): Promise<ProviderResponse> {
     try {
       const vars = context?.vars || {};
       const username = vars.username || 'eval-user';
@@ -46,8 +60,24 @@ class XCareProvider {
       const botMessage = data.conversation.message.find((m: any) => m.role === 'bot');
       const debugInfo = data.debug || {};
 
+      // Parse the content between *** markers into a BotResult object
+      let parsedOutput: BotResult | any = 'No response from bot';
+      if (botMessage) {
+        const content = botMessage.content;
+        const match = content.match(/\*\*\*([\s\S]*?)\*\*\*/);
+        if (match) {
+          try {
+            parsedOutput = JSON.parse(match[1]);
+          } catch (e) {
+            parsedOutput = { answer: content, error: 'Failed to parse JSON inside ***' };
+          }
+        } else {
+          parsedOutput = { answer: content, error: 'No *** markers found' };
+        }
+      }
+
       return {
-        output: botMessage ? botMessage.content : 'No response from bot',
+        output: parsedOutput,
         metadata: {
           intent: debugInfo.intent,
           domains: debugInfo.domains,

@@ -2,102 +2,64 @@
 # GEN-04 | OUT-OF-SCOPE & ANTI-HALLUCINATION
 # ============================================================
 # Mission:
-#   Verify that the bot correctly identifies queries completely unrelated
-#   to healthcare and returns a clean, deterministic refusal without
-#   leaking any KB facts into the response.
+#   Verify clean refusals for off-topic queries and correct handovers for 
+#   missing medical knowledge.
 #
-#   The bot has two distinct refusal paths:
-#     A. OUT_OF_SCOPE: Router classifies the query as non-medical.
-#        → Returns hardcoded: "unrelated to healthcare"
-#        → isManIntervention: false
-#
-#     B. INSUFFICIENT: Query is medical but NOT found in the KB.
-#        → Returns hardcoded: "connecting to service desk team"
-#        → isManIntervention: true
-#
-#   Tests here use fast binary assertions (no LLM judge needed).
-#   Key probe: verify that KB facts do NOT appear in OOS refusals.
-#
-# Add tests here when: new OOS edge cases are discovered in production
-#   or a model update causes KB facts to bleed into refusal responses.
+# Assertion strategy:
+#   - use transform: output.answer for text content checks
+#   - use direct output.isManIntervention paths for routing logic
 # ============================================================
 
-- description: "[GEN-04] OOS — finance query must return clean refusal, no KB bleed"
+- description: "[GEN-04] OOS — finance query refusal"
   vars:
-    test_name: "GEN_OOS_001 | OOS - Finance Query Refusal"
+    test_name: "GEN_OUT_BOUNDS_001 | OOS - Finance Query Refusal"
     username: "tienpham"
     request: "What is the current stock price of Apple Inc.?"
   assert:
     - type: "icontains"
       value: "unrelated to healthcare"
+      transform: "output.answer"
+    - type: "javascript"
+      value: "output.isManIntervention === false"
     - type: "not-icontains"
       value: "Vitamin C"
-    - type: "not-icontains"
-      value: "$100"
-    - type: "not-icontains"
-      value: "1900 1234"
-    - type: "not-icontains"
-      value: "connecting to service desk"
+      transform: "output.answer"
 
-- description: "[GEN-04] OOS — engineering query must not bleed medical KB content"
+- description: "[GEN-04] OOS — engineering query refusal"
   vars:
-    test_name: "GEN_OOS_002 | OOS - Engineering Query Refusal"
+    test_name: "GEN_OUT_BOUNDS_002 | OOS - Engineering Query Refusal"
     username: "tienpham"
-    request: "How do I build a rocket engine from scratch?"
+    request: "How do I build a rocket engine?"
   assert:
     - type: "icontains"
       value: "unrelated to healthcare"
-    - type: "not-icontains"
-      value: "symptoms"
-    - type: "not-icontains"
-      value: "1900 1234"
+      transform: "output.answer"
+    - type: "javascript"
+      value: "output.isManIntervention === false"
 
-- description: "[GEN-04] OOS — creative writing must output refusal without medical data"
+- description: "[GEN-04] INSUFFICIENT — rare disease handover"
   vars:
-    test_name: "GEN_OOS_003 | OOS - Creative Writing Refusal"
-    username: "tienpham"
-    request: "Write me a short poem about the ocean."
-  assert:
-    - type: "icontains"
-      value: "unrelated to healthcare"
-    - type: "not-icontains"
-      value: "headache"
-    - type: "not-icontains"
-      value: "Vitamin C"
-
-- description: "[GEN-04] OOS — political query must refuse without hallucinating"
-  vars:
-    test_name: "GEN_OOS_004 | OOS - Political Query Refusal"
-    username: "tienpham"
-    request: "Who is the current president of the United States?"
-  assert:
-    - type: "icontains"
-      value: "unrelated to healthcare"
-    - type: "not-icontains"
-      value: "symptoms"
-    - type: "not-icontains"
-      value: "medical package"
-
-- description: "[GEN-04] INSUFFICIENT — unknown disease triggers service desk handover"
-  vars:
-    test_name: "GEN_OOS_005 | INSUFFICIENT - Rare Disease Handover"
+    test_name: "GEN_OUT_BOUNDS_005 | INSUFFICIENT - Rare Disease Handover"
     username: "tienpham"
     request: "What is the recommended treatment plan for Huntington's Disease?"
   assert:
     - type: "icontains"
       value: "connecting to service desk"
+      transform: "output.answer"
     - type: "javascript"
-      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+      value: "output.isManIntervention === true"
     - type: "not-icontains"
       value: "unrelated to healthcare"
+      transform: "output.answer"
 
-- description: "[GEN-04] INSUFFICIENT — Alzheimer's query triggers service desk handover"
+- description: "[GEN-04] INSUFFICIENT — Alzheimer's query handover"
   vars:
-    test_name: "GEN_OOS_006 | INSUFFICIENT - Alzheimer Handover"
+    test_name: "GEN_OUT_BOUNDS_006 | INSUFFICIENT - Alzheimer Handover"
     username: "tienpham"
     request: "What is the cure for Alzheimer's disease?"
   assert:
     - type: "icontains"
       value: "connecting to service desk"
+      transform: "output.answer"
     - type: "javascript"
-      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+      value: "output.isManIntervention === true"

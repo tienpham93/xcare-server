@@ -31,7 +31,7 @@ The system uses a two-tier retrieval strategy for guaranteed reliability:
 2. **Semantic RAG Path**: General queries retrieve the top relevant documents from the vector store and pass them to the LLM for context-grounded responses.
 
 ### 🎯 Multi-Domain Intent Router
-Powered by LangGraph, the agent intelligently classifies every message before acting:
+Powered by LangGraph, the agent intelligently classifies every message before acting. Every response follows a strict **BotResult** contract (`answer`, `isManIntervention`, `suggested_actions`):
 - `CHAT`: Friendly greetings bypass the medical pipeline entirely
 - `MEDICAL_QUERY`: Routed to the hybrid knowledge base for context-grounded answers
 - `TICKET`: Automatically extracts structured ticket data from the user's message and creates a support ticket in the database
@@ -60,7 +60,12 @@ Every conversation is audited with:
     ├── PostgreSQL KnowledgeRule (Deterministic)
     └── pgvector knowledge_embeddings (Semantic)
     ↓
-[Ollama LLM: llama3]
+[Ollama Inference]
+    ├── Generator: llama3:8b
+    └── Embeddings: mxbai-embed-large
+    ↓
+[Evaluation Tier]
+    └── Judge: llama3.1:8b (via Promptfoo)
 ```
 
 ---

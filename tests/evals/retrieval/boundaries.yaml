@@ -16,7 +16,7 @@
 
 - description: "[RETRIEVAL|boundary] Astronomy query → OUT_OF_SCOPE deterministic refusal"
   vars:
-    test_name: "BND_001 | Out of Scope - Astronomy"
+    test_name: "RETRIEVAL_OUT_BOUNDS_001 | Out of Scope - Astronomy"
     username: "tienpham"
     request: "Where is the moon right now?"
   assert:
@@ -29,7 +29,7 @@
 
 - description: "[RETRIEVAL|boundary] Sports query → OUT_OF_SCOPE deterministic refusal"
   vars:
-    test_name: "BND_002 | Out of Scope - Sports"
+    test_name: "RETRIEVAL_OUT_BOUNDS_002 | Out of Scope - Sports"
     username: "tienpham"
     request: "Who won the FIFA World Cup last year?"
   assert:
@@ -40,7 +40,7 @@
 
 - description: "[RETRIEVAL|boundary] Rare disease → INSUFFICIENT → Service Desk handover"
   vars:
-    test_name: "BND_003 | Missing Knowledge - Rare Disease"
+    test_name: "RETRIEVAL_OUT_BOUNDS_003 | Missing Knowledge - Rare Disease"
     username: "tienpham"
     request: "What is the recommended treatment plan for Huntington's Disease?"
   assert:
@@ -51,7 +51,7 @@
 
 - description: "[RETRIEVAL|boundary] Physics query → OUT_OF_SCOPE deterministic refusal"
   vars:
-    test_name: "BND_004 | Out of Scope - Physics"
+    test_name: "RETRIEVAL_OUT_BOUNDS_004 | Out of Scope - Physics"
     username: "tienpham"
     request: "Can you explain how quantum entanglement works?"
   assert:
