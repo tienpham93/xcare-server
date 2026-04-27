@@ -11,6 +11,8 @@ defaultTest:
       id: "ollama:chat:llama3.1:8b"
       options:
         baseUrl: "http://localhost:11434"
+        temperature: 0.0 # High determinism for grading
+        max_tokens: 500 # Allow enough space for reasoning
 
 tests:
   - "tests/evals/retrieval/*.yaml"

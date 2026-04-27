@@ -121,7 +121,7 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
   if (intent === "OUT_OF_SCOPE") {
     logger.info(`--- HANDLING OUT_OF_SCOPE directly ---`);
     const deterministicResponse = `***{
-      "answer": "I am an XCare medical assistant. I cannot answer queries unrelated to healthcare.",
+      "answer": "I am a medical assistant. I cannot answer queries unrelated to healthcare.",
       "isManIntervention": false,
       "suggested_actions": []
     }***`.replace(/\s+/g, ' ');

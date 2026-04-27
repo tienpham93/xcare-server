@@ -1,25 +1,70 @@
 [
   {
-    "documentId": "symp-001",
-    "title": "Treatment for Mild Symptoms",
+    "documentId": "symp-mild-001",
+    "title": "Headache Management (Mild Symptoms)",
     "domain": "symptoms",
-    "content": "Mild symptoms include headache, toothache, fever, flu, or cold. These commonly occur during seasonal changes and can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If these mild symptoms do not improve after 3 days, it is recommended to connect with an XCare online doctor.",
+    "content": "Mild symptoms like headaches can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If headache symptoms do not improve after 3 days, it is recommended to connect with the online doctor for further guidance.",
     "metadata": {
       "suggested_actions": [
-        { "label": "Talk to an Online Doctor", "targetDomain": "contacts" }
+        { "label": "Consult Online Doctor", "targetDomain": "contacts" }
       ],
       "severity": "low"
     }
   },
   {
-    "documentId": "symp-002",
-    "title": "Treatment for Critical Symptoms",
+    "documentId": "symp-mild-002",
+    "title": "Fever, Cold, and Flu Care",
     "domain": "symptoms",
-    "content": "Critical symptoms are urgent cases and include being unconscious, getting into an accident, having a broken arm or leg, severe stomachache, or suffering a heart attack. These usually lead to internal damages. It is recommended to connect with an XCare online doctor immediately, and then you must go to a nearby medical center for a quick checkup.",
+    "content": "Mild fever, cold, or flu symptoms often occur during seasonal changes. Treatment involves staying home, maintaining high fluid intake (hydration), and taking Vitamin C to support immunity. Escalation to an online doctor is necessary if symptoms persist beyond 3 days.",
+    "metadata": {
+      "severity": "low"
+    }
+  },
+  {
+    "documentId": "symp-mild-003",
+    "title": "Toothache and Oral Discomfort",
+    "domain": "symptoms",
+    "content": "Mild toothaches or oral discomfort can be managed at home initially. Ensure good oral hygiene and rest. If the pain is severe or persists for more than 3 days, please schedule a consultation with the medical team or an online doctor.",
+    "metadata": {
+      "severity": "low"
+    }
+  },
+  {
+    "documentId": "symp-crit-001",
+    "title": "Accidents and Physical Trauma",
+    "domain": "symptoms",
+    "content": "Critical symptoms include injuries from severe accidents. These often lead to internal damages that aren't immediately visible. It is recommended to connect with an online doctor immediately and subsequently proceed to a nearby medical center for a comprehensive checkup.",
     "metadata": {
       "suggested_actions": [
-        { "label": "Talk to an Online Doctor", "targetDomain": "contacts" }
+        { "label": "Emergency Doctor Contact", "targetDomain": "contacts" }
       ],
+      "severity": "high"
+    }
+  },
+  {
+    "documentId": "symp-crit-002",
+    "title": "Chest Pain and Heart Attack Protocol",
+    "domain": "symptoms",
+    "content": "Chest pain is a critical symptom that may indicate a heart attack. This is a medical emergency requiring immediate action. Connect with an online doctor right away and arrange for urgent transport to the nearest medical center.",
+    "metadata": {
+      "severity": "high"
+    }
+  },
+  {
+    "documentId": "symp-crit-003",
+    "title": "Broken Bones and Fractures",
+    "domain": "symptoms",
+    "content": "Having a broken arm or leg is considered a critical symptom. Do not attempt to move the limb unnecessarily. It is recommended to connect with the medical system's online doctor immediately and then visit a medical center for X-rays and professional stabilization.",
+    "metadata": {
+      "severity": "high"
+    }
+  },
+  {
+    "documentId": "symp-crit-004",
+    "title": "Unconsciousness and Collapse",
+    "domain": "symptoms",
+    "content": "If a person is unconscious or has collapsed, this is a critical emergency. These cases usually involve serious internal conditions. Connect with an online doctor immediately for step-by-step guidance while emergency services are on the way.",
+    "metadata": {
       "severity": "high"
     }
   }

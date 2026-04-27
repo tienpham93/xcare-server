@@ -7,7 +7,7 @@
 #   (faithfulness + llm-rubric) to grade quality beyond binary pass/fail.
 #
 # Assertion strategy:
-#   Since XCareProvider returns a JSON object, we use 'transform: output.answer'
+#   Since the Knowledge Base returns a JSON object, we use 'transform: output.answer'
 #   to extract the text for LLM-graded and string-based assertions.
 # ============================================================
 
@@ -19,21 +19,31 @@
   assert:
     - type: "javascript"
       value: "output.answer.length > 50"
-    - type: "faithfulness"
+    - type: "llm-rubric"
       threshold: 0.90
       transform: "output.answer"
-      value: "Mild symptoms include headache. It can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If these mild symptoms do not improve after 3 days, it is recommended to connect with an XCare online doctor."
+      value: |
+        Faithfulness (Groundedness) Check:
+        Compare the output against this reference context: "Mild symptoms include headache. It can mostly be treated at home. It is recommended to stay home, drink enough water, take Vitamin C, and get adequate sleep. If these mild symptoms do not improve after 3 days, it is recommended to connect with the online doctor."
+        - 1.0: All information in the output is strictly supported by or consistent with the reference.
+        - 0.0: The output contains contradictory info or hallucinations.
+        Explain your reasoning first, then provide the score.
     - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
       value: |
-        Score the response from 0.0 to 1.0 based on these weighted criteria:
-        - Award full marks (1.0) if the response recommends rest, hydration, Vitamin C AND mentions the 3-day threshold.
+        Medical Quality Rubric:
+        - Award 1.0 if the response recommends rest, hydration, Vitamin C AND mentions the 3-day threshold.
         - Deduct 0.3 points if Vitamin C or hydration is not mentioned.
         - Award 0.0 if the response refuses to help or escalates unnecessarily.
-    - type: "answer-relevance"
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
+      value: |
+        Answer Relevance:
+        Evaluate if the response accurately and helpfully answers the user's specific question about their headache.
+        Explain your reasoning first, then provide the score.
 
 - description: "[GEN-02] Accuracy — critical accident guidance"
   vars:
@@ -41,20 +51,27 @@
     username: "tienpham"
     request: "I was in a car accident and I cannot move my legs."
   assert:
-    - type: "faithfulness"
-      threshold: 0.90
-      transform: "output.answer"
-      value: "Critical symptoms are urgent cases and include getting into an accident. These usually lead to internal damages. It is recommended to connect with an XCare online doctor immediately, and then go to a nearby medical center for a quick checkup."
     - type: "llm-rubric"
       threshold: 0.90
       transform: "output.answer"
       value: |
-        Score the response from 0.0 to 1.0 based on appropriate urgency:
-        - Award full marks (1.0) if the response urgently recommends going to a medical center.
-        - Award 0.0 if the response dismisses the severity.
-    - type: "answer-relevance"
+        Faithfulness Check:
+        Compare against: "Critical symptoms are urgent cases and include getting into an accident. These usually lead to internal damages. It is recommended to connect with an the system's online doctor immediately, and then go to a nearby medical center for a quick checkup."
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
+      threshold: 0.90
+      transform: "output.answer"
+      value: |
+        Urgency Rubric:
+        - 1.0 if the response urgently recommends going to a medical center.
+        - 0.0 if the response dismisses the severity.
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
+      value: |
+        Answer Relevance: Does the response address the accident and lack of leg movement with appropriate severity?
+        Explain your reasoning first, then provide the score.
 
 - description: "[GEN-02] Accuracy — gout dietary advice"
   vars:
@@ -62,32 +79,42 @@
     username: "tienpham"
     request: "I have gout. What foods should I avoid?"
   assert:
-    - type: "faithfulness"
+    - type: "llm-rubric"
       threshold: 0.95
       transform: "output.answer"
-      value: "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins. These foods contribute to high blood levels of uric acid."
+      value: |
+        Faithfulness Check:
+        Compare against: "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins. These foods contribute to high blood levels of uric acid."
+        Explain your reasoning first, then provide the score.
     - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
       value: |
-        Score the response from 0.0 to 1.0 based on dietary precision:
-        - Award full marks (1.0) if red meats, seafood, AND uric acid are all mentioned.
-    - type: "answer-relevance"
+        Dietary Precision:
+        - 1.0 if red meats, seafood, AND uric acid are all mentioned.
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
+      value: |
+        Answer Relevance: Does the response accurately list foods to avoid for gout?
+        Explain your reasoning first, then provide the score.
 
 - description: "[GEN-02] Accuracy — endoscopy pricing"
   vars:
     test_name: "GEN_MEDICAL_ACCURACY_004 | Accuracy - Endoscopy Billing"
     username: "tienpham"
-    request: "How much does an endoscopy cost at XCare?"
+    request: "How much does an endoscopy cost at the medical assistant?"
   assert:
     - type: "javascript"
       value: 'output.answer.includes("$200") || output.answer.includes("$1000")'
-    - type: "faithfulness"
+    - type: "llm-rubric"
       threshold: 0.95
       transform: "output.answer"
-      value: "Endoscopy fees range from approximately $200 to $1000."
+      value: |
+        Faithfulness Check:
+        Compare against: "Endoscopy fees range from approximately $200 to $1000."
+        Explain your reasoning first, then provide the score.
     - type: "similar"
       threshold: 0.80
       transform: "output.answer"
@@ -100,13 +127,19 @@
     username: "tienpham"
     request: "What are the common symptoms of Covid-19?"
   assert:
-    - type: "faithfulness"
+    - type: "llm-rubric"
       threshold: 0.90
       transform: "output.answer"
-      value: "Possible symptoms of Covid-19 include fever, cough, shortness of breath, fatigue, body aches, loss of taste or smell, sore throat, and congestion."
-    - type: "answer-relevance"
+      value: |
+        Faithfulness Check:
+        Compare against: "Possible symptoms of Covid-19 include fever, cough, shortness of breath, fatigue, body aches, loss of taste or smell, sore throat, and congestion."
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
+      value: |
+        Answer Relevance: Did the bot provide a comprehensive list of symptoms as requested?
+        Explain your reasoning first, then provide the score.
 
 - description: "[GEN-02] Accuracy — Premium Package eligibility"
   vars:
@@ -117,10 +150,16 @@
     - type: "icontains"
       value: "Premium Package"
       transform: "output.answer"
-    - type: "faithfulness"
+    - type: "llm-rubric"
       threshold: 0.95
       transform: "output.answer"
-      value: "Patients above 45 years old can purchase the Senior Package. Additionally, female patients above 45 years old are eligible to purchase the Premium Package."
-    - type: "answer-relevance"
+      value: |
+        Faithfulness Check:
+        Compare against: "Patients above 45 years old can purchase the Senior Package. Additionally, female patients above 45 years old are eligible to purchase the Premium Package."
+        Explain your reasoning first, then provide the score.
+    - type: "llm-rubric"
       threshold: 0.80
       transform: "output.answer"
+      value: |
+        Answer Relevance: Did the bot correctly identify the Premium Package based on age and gender?
+        Explain your reasoning first, then provide the score.

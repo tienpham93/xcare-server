@@ -1,30 +1,58 @@
 [
-    {
-        "documentId": "diet-001",
-        "title": "Diet for Obesity Management",
-        "domain": "diets",
-        "content": "For obesity management, patients should aim to consume less than 200 milligrams (mg) of cholesterol a day. Dietary choices should limit high-fat foods, sugar, and alcohol.",
-        "metadata": {}
-    },
-    {
-        "documentId": "diet-002",
-        "title": "Diet for Diabetes Management",
-        "domain": "diets",
-        "content": "For diabetes management, patients should strictly avoid high-fat dairy products (like whole milk) and high sugary foods.",
-        "metadata": {}
-    },
-    {
-        "documentId": "diet-003",
-        "title": "Diet for Gout Management",
-        "domain": "diets",
-        "content": "For gout management, patients should avoid red meats such as beef, seafood, and certain animal proteins (like chicken or fish in excess). These foods contribute to high blood levels of uric acid which can trigger gout attacks.",
-        "metadata": {}
-    },
-    {
-        "documentId": "diet-004",
-        "title": "Diet for Multiple Diseases",
-        "domain": "diets",
-        "content": "Patients who have multiple concurrent diseases should completely avoid alcohol and should highly consider transitioning to a vegetarian diet rich in vegetables.",
-        "metadata": {}
+  {
+    "documentId": "diet-gout-001",
+    "title": "Gout Management: Red Meats and Seafood",
+    "domain": "diets",
+    "content": "For gout management, patients must strictly avoid red meats (such as beef) and seafood. These specific food groups are significantly high in purines, which lead to elevated uric acid levels in the blood and trigger gout attacks.",
+    "metadata": {
+      "disease": "gout",
+      "severity": "high"
     }
+  },
+  {
+    "documentId": "diet-gout-002",
+    "title": "Gout Management: Protein Nuance (Chicken and Fish)",
+    "domain": "diets",
+    "content": "While managing gout, certain animal proteins like chicken or fish can be consumed but only in strict moderation. Consuming these proteins in excess contributes to high blood levels of uric acid, which can trigger painful gout flare-ups.",
+    "metadata": {
+      "disease": "gout",
+      "severity": "medium"
+    }
+  },
+  {
+    "documentId": "diet-obesity-001",
+    "title": "Diet for Obesity Management",
+    "domain": "diets",
+    "content": "For obesity management, patients should aim to consume less than 200 milligrams (mg) of cholesterol per day. Recommended dietary choices include limiting high-fat foods, refined sugars, and alcohol intake.",
+    "metadata": {
+      "disease": "obesity"
+    }
+  },
+  {
+    "documentId": "diet-diabetes-001",
+    "title": "Diet for Diabetes Management",
+    "domain": "diets",
+    "content": "Managing diabetes requires strictly avoiding high-fat dairy products (like whole milk) and foods with high sugar content. Focus on low-glycemic index foods and consistent meal timing.",
+    "metadata": {
+      "disease": "diabetes"
+    }
+  },
+  {
+    "documentId": "diet-multi-001",
+    "title": "Dietary Restrictions for Multiple Concurrent Diseases",
+    "domain": "diets",
+    "content": "Patients suffering from multiple concurrent diseases should completely avoid alcohol to prevent metabolic complications and negative drug interactions.",
+    "metadata": {
+      "disease": "multiple"
+    }
+  },
+  {
+    "documentId": "diet-multi-002",
+    "title": "Vegetarian Benefits for Complex Medical Conditions",
+    "domain": "diets",
+    "content": "For patients with complex or multiple diseases, transitioning to a vegetarian diet rich in diverse vegetables is highly recommended. This diet helps manage systemic inflammation and improves overall nutritional balance.",
+    "metadata": {
+      "disease": "multiple"
+    }
+  }
 ]

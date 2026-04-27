@@ -1,20 +1,47 @@
 [
-    {
-        "documentId": "med-pkg-001",
-        "title": "Medical Packages by Age Demographic",
-        "domain": "medical_package",
-        "content": "XCare offers a variety of medical packages tailored to different age groups and demographics. Patients below 20 years old can purchase the Adolescent Package. Patients from 20 to 30 years old can purchase the Under30 Package. Patients from 31 to 45 years old can purchase the Middle Age Package. Patients above 45 years old can purchase the Senior Package. Additionally, female patients above 45 years old are eligible to purchase the Premium Package.",
-        "metadata": {
-            "suggested_actions": [
-                { "label": "View Package Pricing", "targetDomain": "billing" }
-            ]
-        }
-    },
-    {
-        "documentId": "med-pkg-002",
-        "title": "Medical Packages Pricing",
-        "domain": "medical_package",
-        "content": "All of our medical packages including the Adolescent Package, Under30 Package, Middle Age Package, Senior Package, and Premium Package are priced the same at $1000. For more details, patients can review all packages at our website www.xcare.com.",
-        "metadata": {}
+  {
+    "documentId": "med-pkg-001-senior",
+    "title": "Medical Packages for Seniors (Above 45)",
+    "domain": "medical_package",
+    "content": "Patients who are older than 45 years are eligible to purchase the Senior Package. This package is tailored to age-related health monitoring and preventative care.",
+    "metadata": {
+      "ageGroup": "senior",
+      "suggested_actions": [
+        { "label": "View Package Pricing", "targetDomain": "billing" }
+      ]
     }
+  },
+  {
+    "documentId": "med-pkg-001-premium",
+    "title": "Medical Packages for Women (Above 45)",
+    "domain": "medical_package",
+    "content": "Female patients who are older than 45 years are eligible to purchase the Premium Package. This package offers advanced screenings and health assessments specifically for women in the senior demographic.",
+    "metadata": {
+      "ageGroup": "senior",
+      "gender": "female",
+      "suggested_actions": [
+        { "label": "View Package Pricing", "targetDomain": "billing" }
+      ]
+    }
+  },
+  {
+    "documentId": "med-pkg-001-young",
+    "title": "Medical Packages for Adolescents and Young Adults",
+    "domain": "medical_package",
+    "content": "The medical system offers specific packages for younger patients: The Adolescent Package is for those below 20 years old. The Under30 Package is for patients from 20 to 30 years old, and the Middle Age Package is for those between 31 and 45.",
+    "metadata": {
+      "ageGroup": "young"
+    }
+  },
+  {
+    "documentId": "med-pkg-002-pricing",
+    "title": "Medical Packages Pricing Structure",
+    "domain": "medical_package",
+    "content": "All medical packages—including the Adolescent, Under30, Middle Age, Senior, and Premium Packages—are priced at a flat rate of $1000 per package. This simplified pricing ensures accessibility for all demographic groups.",
+    "metadata": {
+      "suggested_actions": [
+        { "label": "View Fees", "targetDomain": "billing" }
+      ]
+    }
+  }
 ]
