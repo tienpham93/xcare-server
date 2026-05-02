@@ -1,0 +1,5 @@
+***{
+  "answer": "{{ answer }}",
+  "isManIntervention": {{ isManIntervention | default(false) }},
+  "suggested_actions": {{ suggested_actions | default([]) | dump | safe }}
+}***

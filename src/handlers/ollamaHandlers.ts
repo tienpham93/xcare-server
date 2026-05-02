@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { OllamaResponse } from '../types';
+import { OllamaResponse, Intent, ContextStatus, MessageType } from '../types';
 import { logger } from '../utils/logger';
 import { serverHost } from '../env';
 import { ollamaService } from '../server';
@@ -11,7 +11,7 @@ export const postGenerateHandler = async (
     req: Request,
     res: Response
 ) => {
-    const { model, prompt, sessionId = 'greeting', messageType = 'general', username } = req.body;
+    const { model, prompt, sessionId = 'greeting', messageType = MessageType.GENERAL, username } = req.body;
     
     // Verify Auth Token
     const authService = new AuthService();
@@ -41,9 +41,9 @@ export const postGenerateHandler = async (
             username: username || 'anonymous',
             messageType: messageType,
             history: [],
-            intent: 'UNKNOWN',
+            intent: Intent.CHAT,
             domains: [],
-            contextStatus: 'SUFFICIENT',
+            contextStatus: ContextStatus.SUFFICIENT,
             usedWebSearch: false,
             documents: [],
             generation: '',

@@ -47,7 +47,7 @@
     - type: "icontains"
       value: "connecting to service desk"
     - type: "javascript"
-      value: 'output.includes("isManIntervention") && (output.includes("true") || output.includes("True"))'
+      value: "output.isManIntervention === true"
 
 - description: "[RETRIEVAL|boundary] Physics query → OUT_OF_SCOPE deterministic refusal"
   vars:

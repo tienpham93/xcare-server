@@ -1,8 +1,10 @@
 import { Annotation, StateGraph, END, START } from "@langchain/langgraph";
 import { KnowledgeBase } from "../RAGservice/knowledgeBase";
-import { SearchResult } from "../../types";
+import { SearchResult, Intent, ContextStatus, ClassifyIntentResult, MessageType, Domain } from "../../types";
 import { BaseMessage } from "@langchain/core/messages";
 import { logger } from "../../utils/logger";
+import { serverHost } from "../../env";
+import { renderPrompt, renderResponse } from "../../prompt/promptFactory";
 
 /**
  * Define the state for the LangGraph agent.
@@ -14,49 +16,30 @@ export const AgentState = Annotation.Root({
   generation: Annotation<string>,
   evalMetadata: Annotation<Record<string, any>>,
   username: Annotation<string>,
-  messageType: Annotation<string>,
-  intent: Annotation<string>,
-  domains: Annotation<string[]>,
-  contextStatus: Annotation<"SUFFICIENT" | "INSUFFICIENT">,
+  messageType: Annotation<MessageType>,
+  intent: Annotation<Intent>,
+  domains: Annotation<Domain[]>,
+  contextStatus: Annotation<ContextStatus>,
   // Whether the web search fallback was triggered
   usedWebSearch: Annotation<boolean>,
 });
 
+/**
+ * Node: Router
+ * Classifies every user message via the LLM — no fast-path keyword matching.
+ */
 const routerNode = async (state: typeof AgentState.State) => {
-  const query = state.question.toLowerCase().trim().replace(/[?!.]/g, '');
-  const commonGreetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'hi there', 'hello there'];
-
-  // Fast-path 1: Frontend explicitly signals ticket submission
-  if (state.messageType === "submit") {
-    logger.info(`--- FAST-PATH: Frontend declared messageType=submit ---`);
-    return {
-      intent: "TICKET",
-      domains: [],
-      evalMetadata: { intentReasoning: "Frontend declared ticket submission" }
-    };
-  }
-
-  // Fast-path 2: Common greeting bypass
-  if (commonGreetings.includes(query)) {
-    logger.info(`--- FAST-PATH: Detected common greeting: ${query} ---`);
-    return {
-      intent: "CHAT",
-      domains: [],
-      evalMetadata: { intentReasoning: "Fast-path greeting detection" }
-    };
-  }
-
   logger.info(`--- CLASSIFYING intent for: ${state.question} ---`);
   const { ollamaService } = await import("../../server.js");
-  
-  const result = await ollamaService.classifyIntent(state.question);
-  
+
+  const result: ClassifyIntentResult = await ollamaService.classifyIntent(state.question);
+
   return {
     intent: result.intent,
     domains: result.domains,
     evalMetadata: {
-        intentReasoning: result.reasoning
-    }
+      intentReasoning: result.reasoning,
+    },
   };
 };
 
@@ -65,11 +48,6 @@ const routerNode = async (state: typeof AgentState.State) => {
  * Searches the PGVector knowledge base for relevant documents.
  */
 const retrieveNode = async (state: typeof AgentState.State) => {
-  if (state.intent === "CHAT" || state.intent === "OUT_OF_SCOPE") {
-    logger.info(`--- SKIPPING retrieval for ${state.intent} ---`);
-    return { documents: [] };
-  }
-
   logger.info(`--- RETRIEVING for: ${state.question} (Domains: ${state.domains.join(", ")}) ---`);
   const knowledgeBase = KnowledgeBase.getInstance();
   const results = await knowledgeBase.searchRelevant(state.question, state.domains);
@@ -91,7 +69,7 @@ const retrieveNode = async (state: typeof AgentState.State) => {
  */
 const rankerNode = async (state: typeof AgentState.State) => {
   if (state.documents.length === 0) {
-    return { contextStatus: "INSUFFICIENT" as const };
+    return { contextStatus: ContextStatus.INSUFFICIENT };
   }
 
   logger.info("--- RANKING retrieved documents ---");
@@ -113,18 +91,20 @@ const rankerNode = async (state: typeof AgentState.State) => {
   };
 };
 
-const generateNode = async (state: typeof AgentState.State, config?: any) => {
-  const { question, documents, username, contextStatus, intent } = state;
+/**
+ * Node: Generate Without KB
+ * Handles intents that do NOT need retrieval context:
+ *   - CHAT → warm conversational response via LLM
+ *   - OUT_OF_SCOPE → deterministic refusal
+ */
+const generateWithoutKbNode = async (state: typeof AgentState.State) => {
+  const { question, username, intent } = state;
   const { ollamaService } = await import("../../server.js");
 
-  // 1. Path A: Intent is OUT_OF_SCOPE -> Deterministic Refusal
-  if (intent === "OUT_OF_SCOPE") {
+  // OUT_OF_SCOPE → deterministic refusal (no LLM generation)
+  if (intent === Intent.OUT_OF_SCOPE) {
     logger.info(`--- HANDLING OUT_OF_SCOPE directly ---`);
-    const deterministicResponse = `***{
-      "answer": "I am a medical assistant. I cannot answer queries unrelated to healthcare.",
-      "isManIntervention": false,
-      "suggested_actions": []
-    }***`.replace(/\s+/g, ' ');
+    const deterministicResponse = renderResponse("responses/res_out_of_scope.njk");
 
     return {
       generation: deterministicResponse,
@@ -132,18 +112,27 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     };
   }
 
-  // 1. Path B: Intent is CHAT -> Skip RAG and Rules, just respond
-  if (intent === "CHAT") {
-    logger.info(`--- HANDLING simple chat/greeting ---`);
-    const result = await ollamaService.generate(username, question, [], intent);
-    return {
-      generation: result.response,
-      evalMetadata: { ...state.evalMetadata, isChat: true, isDeterministic: false }
-    };
-  }
+  // CHAT → warm conversational response
+  logger.info(`--- HANDLING simple chat/greeting ---`);
+  const result = await ollamaService.generate(username, question, [], intent);
+  return {
+    generation: result.response,
+    evalMetadata: { ...state.evalMetadata, isChat: true, isDeterministic: false }
+  };
+};
 
-  // 2. Path B: Sufficient Context -> RAG Generation
-  if (contextStatus === "SUFFICIENT") {
+/**
+ * Node: Generate With KB
+ * Handles intents that need retrieval context:
+ *   - MEDICAL_QUERY → standard RAG (strict rules → LLM with KB docs → fallback)
+ *   - EMERGENCY → deterministic strictAnswer via service_desk knowledge rule
+ */
+const generateWithKbNode = async (state: typeof AgentState.State) => {
+  const { question, documents, username, contextStatus, intent } = state;
+  const { ollamaService } = await import("../../server.js");
+
+  // Path A: Sufficient Context → RAG Generation
+  if (contextStatus === ContextStatus.SUFFICIENT) {
     logger.info(`--- GENERATING RAG response ---`);
     
     // Check for Priority Strict Rule (Pre-generation bypass)
@@ -151,12 +140,11 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     if (strictDoc && strictDoc.metadata) {
       logger.info(`--- DETERMINISTIC Answer triggered for: ${strictDoc.title} ---`);
       
-      // Standardize the response format to match LLM output for consistency
-      const deterministicResponse = `***{
-        "answer": "${strictDoc.metadata.strictAnswer}",
-        "isManIntervention": ${strictDoc.metadata.isManIntervention || false},
-        "suggested_actions": ${JSON.stringify(strictDoc.metadata.suggested_actions || [])}
-      }***`.replace(/\s+/g, ' ');
+      const deterministicResponse = renderResponse("responses/res_strict_rule.njk", {
+        answer: strictDoc.metadata.strictAnswer,
+        isManIntervention: strictDoc.metadata.isManIntervention,
+        suggested_actions: strictDoc.metadata.suggested_actions
+      });
 
       return {
         generation: deterministicResponse,
@@ -171,7 +159,7 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     };
   }
 
-  // 3. Path C: Insufficient Context -> Fallback to Rules (e.g. Technician Handover)
+  // Path B: Insufficient Context → Fallback to Rules (e.g. Technician Handover)
   logger.info(`--- CONTEXT INSUFFICIENT for medical query, checking for fallback rules ---`);
   const knowledgeBase = KnowledgeBase.getInstance();
   const fallbacks = await knowledgeBase.searchRelevant(question);
@@ -180,12 +168,11 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
   if (strictFallback && strictFallback.metadata) {
     logger.info(`--- FALLBACK RULE triggered: ${strictFallback.title} ---`);
     
-    // Standardize the response format
-    const deterministicResponse = `***{
-      "answer": "${strictFallback.metadata.strictAnswer}",
-      "isManIntervention": ${strictFallback.metadata.isManIntervention || false},
-      "suggested_actions": ${JSON.stringify(strictFallback.metadata.suggested_actions || [])}
-    }***`.replace(/\s+/g, ' ');
+    const deterministicResponse = renderResponse("responses/res_strict_rule.njk", {
+        answer: strictFallback.metadata.strictAnswer,
+        isManIntervention: strictFallback.metadata.isManIntervention,
+        suggested_actions: strictFallback.metadata.suggested_actions
+    });
 
     return {
       generation: deterministicResponse,
@@ -193,13 +180,9 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
     };
   }
 
-  // 3. Path D: Complete Miss -> Hardcode Service Desk Handover
+  // Path C: Complete Miss → Hardcode Service Desk Handover
   logger.info(`--- NO RULES found, escalating to Service Desk ---`);
-  const fallbackResponse = `***{
-    "answer": "Your query is out of my knowledge, please wait for a minute! I am connecting to service desk team",
-    "isManIntervention": true,
-    "suggested_actions": [{"label": "Contact Service Desk", "targetDomain": "service_desk"}]
-  }***`.replace(/\s+/g, ' ');
+  const fallbackResponse = renderResponse("responses/res_escalation.njk");
 
   return {
     generation: fallbackResponse,
@@ -208,14 +191,75 @@ const generateNode = async (state: typeof AgentState.State, config?: any) => {
 };
 
 /**
- * Node: Submission
- * Handles ticket submission logic specifically.
+ * Node: Submission / Ticket Flow
+ * Handles all ticket-related intents by routing to appropriate endpoints:
+ *   - TICKET_SUBMIT → extract data via LLM → POST /agent/submit
+ *   - TICKET_GET → fetch tickets via GET /agent/tickets
+ *   - TICKET_PROCESS → escalate to service desk via POST /agent/monitoring
  */
-const submitNode = async (state: typeof AgentState.State, config?: any) => {
-  logger.info(`--- SUBMITTING TICKET ---`);
-  const { question, username } = state;
+const submitNode = async (state: typeof AgentState.State) => {
+  const { question, username, intent } = state;
   const { ollamaService } = await import("../../server.js");
 
+  // ── TICKET_GET: Fetch existing tickets ────────────────────
+  if (intent === Intent.TICKET_GET) {
+    logger.info(`--- TICKET_GET: Fetching tickets for ${username} ---`);
+    try {
+      const res = await fetch(`${serverHost}/agent/tickets?createdBy=${username}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const tickets = await res.json() as any[];
+
+      if (!tickets || tickets.length === 0) {
+        return {
+          generation: renderResponse("responses/res_ticket_list.njk", { answer: "You currently have no tickets." }),
+          evalMetadata: { ...state.evalMetadata, isTicketGet: true, ticketCount: 0 },
+        };
+      }
+
+      const summary = tickets
+        .map((t: any) => `• [${t.status}] ${t.title} (ID: ${t.id})`)
+        .join("\\n");
+      
+      return {
+        generation: renderResponse("responses/res_ticket_list.njk", { answer: `Here are your tickets:\\n${summary}` }),
+        evalMetadata: { ...state.evalMetadata, isTicketGet: true, ticketCount: tickets.length },
+      };
+    } catch (error) {
+      logger.error("Error fetching tickets", error);
+      return {
+        generation: renderResponse("responses/res_ticket_list.njk", { answer: "Sorry, I was unable to retrieve your tickets. Please try again later." }),
+        evalMetadata: { ...state.evalMetadata, isTicketGet: true, error: true },
+      };
+    }
+  }
+
+  // ── TICKET_PROCESS: Service desk escalation (Monitoring) ──
+  if (intent === Intent.TICKET_PROCESS) {
+    logger.info(`--- TICKET_PROCESS: Escalating to service desk ---`);
+    
+    // Call monitoring endpoint for TICKET_PROCESS to ensure visibility
+    await fetch(`${serverHost}/agent/monitoring`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            conversation: { user: question, bot: "Escalating ticket process request" },
+            isManIntervention: true,
+            evalMetadata: { ...state.evalMetadata, intent: Intent.TICKET_PROCESS }
+        })
+    });
+
+    return {
+      generation: renderResponse("responses/res_escalation.njk", { 
+        answer: "Ticket modifications are handled by our service desk team. I have escalated your request, and a technician will contact you shortly." 
+      }),
+      evalMetadata: { ...state.evalMetadata, isTicketProcess: true },
+    };
+  }
+
+  // ── TICKET_SUBMIT: Extract and create ticket ──────────────
+  logger.info(`--- TICKET_SUBMIT: Processing submission ---`);
   const result = await ollamaService.submitTicket(username, question);
 
   return {
@@ -233,7 +277,7 @@ const submitNode = async (state: typeof AgentState.State, config?: any) => {
  */
 const analyzeNode = async (state: typeof AgentState.State) => {
   logger.info(`--- ANALYZING response ---`);
-  const isManIntervention = state.documents.some(d => d.metadata?.isManIntervention) || state.contextStatus === "INSUFFICIENT";
+  const isManIntervention = state.documents.some(d => d.metadata?.isManIntervention) || state.contextStatus === ContextStatus.INSUFFICIENT;
 
   return {
     evalMetadata: {
@@ -247,18 +291,21 @@ const analyzeNode = async (state: typeof AgentState.State) => {
 
 /**
  * Conditional logic: Route after router based on intent.
+ *   - CHAT / OUT_OF_SCOPE         → generate-without-kb
+ *   - MEDICAL_QUERY / EMERGENCY   → retrieve (KB path)
+ *   - TICKET_*                    → submit
  */
 const routeAfterRouter = (state: typeof AgentState.State): string => {
-  if (state.intent === "CHAT") return "generate";
-  return "retrieve";
-};
+  const { intent } = state;
 
-/**
- * Conditional logic: Route after ranker based on intent.
- */
-const routeByIntent = (state: typeof AgentState.State): string => {
-  if (state.intent === "TICKET") return "submit";
-  return "generate";
+  if (intent === Intent.CHAT || intent === Intent.OUT_OF_SCOPE) {
+    return "generate-without-kb";
+  }
+  if (intent === Intent.TICKET_SUBMIT || intent === Intent.TICKET_GET || intent === Intent.TICKET_PROCESS) {
+    return "submit";
+  }
+  // MEDICAL_QUERY, EMERGENCY → retrieve
+  return "retrieve";
 };
 
 // Build the Graph with Multi-Stage Routing
@@ -266,22 +313,22 @@ const workflow = new StateGraph(AgentState)
   .addNode("router", routerNode)
   .addNode("retrieve", retrieveNode)
   .addNode("ranker", rankerNode)
-  .addNode("generate", generateNode)
+  .addNode("generate-without-kb", generateWithoutKbNode)
+  .addNode("generate-with-kb", generateWithKbNode)
   .addNode("submit", submitNode)
   .addNode("analyze", analyzeNode)
 
   // Edge Flow
   .addEdge(START, "router")
   .addConditionalEdges("router", routeAfterRouter, {
-    generate: "generate",
-    retrieve: "retrieve"
+    "generate-without-kb": "generate-without-kb",
+    "retrieve": "retrieve",
+    "submit": "submit",
   })
   .addEdge("retrieve", "ranker")
-  .addConditionalEdges("ranker", routeByIntent, {
-    submit: "submit",
-    generate: "generate",
-  })
-  .addEdge("generate", "analyze")
+  .addEdge("ranker", "generate-with-kb")
+  .addEdge("generate-without-kb", "analyze")
+  .addEdge("generate-with-kb", "analyze")
   .addEdge("submit", "analyze")
   .addEdge("analyze", END);
 

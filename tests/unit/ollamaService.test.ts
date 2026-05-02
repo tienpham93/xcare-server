@@ -1,4 +1,5 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { Intent } from "../../src/types";
 
 // 1. Mock LangChain ChatOllama
 // WHY: Prevent the service from making real HTTP calls to the local Ollama instance.
@@ -29,15 +30,35 @@ describe("OllamaService Unit Tests", () => {
         mockFetch.mockClear();
     });
 
-    test("classifyIntent should return TICKET for ticket requests", async () => {
+    test("classifyIntent should return TICKET_SUBMIT for ticket creation requests", async () => {
         mockInvoke.mockResolvedValue({
-            content: '***{"intent": "TICKET", "domains": ["symptoms"], "reasoning": "User wants to open a ticket"}***'
+            content: '***{"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "User wants to open a ticket"}***'
         });
 
         const result = await service.classifyIntent("Submit a ticket about my fever");
 
-        expect(result.intent).toBe("TICKET");
+        expect(result.intent).toBe(Intent.TICKET_SUBMIT);
         expect(mockInvoke).toHaveBeenCalledTimes(1);
+    });
+
+    test("classifyIntent should return TICKET_GET for ticket inquiry requests", async () => {
+        mockInvoke.mockResolvedValue({
+            content: '***{"intent": "TICKET_GET", "domains": [], "reasoning": "User wants to view tickets"}***'
+        });
+
+        const result = await service.classifyIntent("Show me my tickets");
+
+        expect(result.intent).toBe(Intent.TICKET_GET);
+    });
+
+    test("classifyIntent should return TICKET_PROCESS for ticket update requests", async () => {
+        mockInvoke.mockResolvedValue({
+            content: '***{"intent": "TICKET_PROCESS", "domains": [], "reasoning": "User wants to close a ticket"}***'
+        });
+
+        const result = await service.classifyIntent("Please close my ticket #123");
+
+        expect(result.intent).toBe(Intent.TICKET_PROCESS);
     });
 
     test("classifyIntent should fallback safely if LLM returns garbage", async () => {
@@ -46,7 +67,7 @@ describe("OllamaService Unit Tests", () => {
         const result = await service.classifyIntent("Help me");
 
         // Should return the fallback defined in ollamaService.ts
-        expect(result.intent).toBe("MEDICAL_QUERY");
+        expect(result.intent).toBe(Intent.MEDICAL_QUERY);
         expect(result.reasoning).toBe("fallback");
     });
 

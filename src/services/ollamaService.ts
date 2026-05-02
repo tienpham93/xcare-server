@@ -1,8 +1,8 @@
-import { ModelConfig, SearchResult, User } from "../types";
+import { ModelConfig, SearchResult, User, Intent, ClassifyIntentResult, MessageType } from "../types";
 import { defautModelConfig, isValidModel } from "../config/modelConfig";
 import { logger } from "../utils/logger";
 import { ChatOllama } from "@langchain/ollama";
-import { promptGenerator } from "../prompt/promptFactory";
+import { promptGenerator, renderPrompt, renderResponse } from "../prompt/promptFactory";
 import { parseAnswer } from "../utils/stringFormat";
 import { serverHost } from "../env";
 import { HumanMessage } from "@langchain/core/messages";
@@ -44,27 +44,35 @@ export class OllamaService {
         }
     }
 
-    async classifyIntent(prompt: string): Promise<any> {
+    async classifyIntent(prompt: string): Promise<ClassifyIntentResult> {
         try {
-            const completePrompt = await promptGenerator("router", prompt, []);
+            const completePrompt = await promptGenerator(MessageType.ROUTER, prompt, []);
             const response = await this.llm.invoke([new HumanMessage(completePrompt)]);
             const parsed = parseAnswer(response.content as string);
             
             // If it's a CHAT intent, we ensure domains are empty to avoid irrelevant retrieval
-            if (parsed.intent === "CHAT") {
+            if (parsed.intent === Intent.CHAT) {
                 parsed.domains = [];
             }
             
-            return parsed.intent ? parsed : { intent: "MEDICAL_QUERY", domains: [], reasoning: "fallback" };
+            return parsed.intent ? parsed : { 
+                    intent: Intent.MEDICAL_QUERY, 
+                    domains: [], 
+                    reasoning: "fallback" 
+                };
         } catch (error) {
             logger.error("Error in classifyIntent", error);
-            return { intent: "MEDICAL_QUERY", domains: [], reasoning: "error fallback" };
+            return { 
+                intent: Intent.MEDICAL_QUERY, 
+                domains: [], 
+                reasoning: "error fallback" 
+            };
         }
     }
 
     async assessContext(prompt: string, context: SearchResult): Promise<any> {
         try {
-            const completePrompt = await promptGenerator("ranker", prompt, [context]);
+            const completePrompt = await promptGenerator(MessageType.RANKER, prompt, [context]);
             const response = await this.llm.invoke([new HumanMessage(completePrompt)]);
             const parsed = parseAnswer(response.content as string);
             return parsed.context_sufficiency ? parsed : { relevance_score: 0.5, is_relevant: true, context_sufficiency: "SUFFICIENT" };
@@ -77,7 +85,7 @@ export class OllamaService {
     async generate(username: string, prompt: string, relevantResult?: SearchResult[] | null, intent: string = "UNKNOWN"): Promise<any> {
         try {
             const completePrompt = await promptGenerator(
-                "general",
+                MessageType.GENERAL,
                 prompt, 
                 relevantResult || [], 
                 username,
@@ -100,7 +108,7 @@ export class OllamaService {
     async submitTicket(username: string, prompt: string, relevantResult?: SearchResult[] | null): Promise<any> {
         try {
             const completePrompt = await promptGenerator(
-                "submit",
+                MessageType.SUBMIT,
                 prompt, 
                 [],       // No RAG context needed — just user profile + message
                 username
@@ -112,7 +120,9 @@ export class OllamaService {
 
             const responseContent = response.content as string;
             const rawAnswer = parseAnswer(responseContent);
-            let responseAnswer = `***{ "answer": "You missed ${rawAnswer.data} please submit again follow this format title: <title> and content: <content>" }***`;
+            let responseAnswer = renderResponse("responses/res_ticket_status.njk", { 
+                answer: `You missed ${rawAnswer.data} please submit again follow this format title: <title> and content: <content>` 
+            });
             
             if (rawAnswer.isValid) {
                 const ticketData = rawAnswer.data;
@@ -124,7 +134,9 @@ export class OllamaService {
                     body: JSON.stringify(ticketData)
                 });
                 const resData = await resSubmit.json();
-                responseAnswer = `***{ "answer": "Your ticket has been created successfully with ticket ID is ${resData.id}" }***`;
+                responseAnswer = renderResponse("responses/res_ticket_status.njk", { 
+                    answer: `Your ticket has been created successfully with ticket ID is ${resData.id}` 
+                });
             }
 
             return {

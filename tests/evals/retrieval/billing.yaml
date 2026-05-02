@@ -41,7 +41,7 @@
     request: "How much does it cost to see a doctor in person?"
   assert:
     - type: "javascript"
-      value: 'output.includes("$100") || output.includes("$200")'
+      value: 'output.answer.includes("$100") || output.answer.includes("$200")'
     - type: "not-icontains"
       value: "out of my knowledge"
 
@@ -63,6 +63,6 @@
     request: "How much does a medical health package cost?"
   assert:
     - type: "javascript"
-      value: 'output.includes("$1000") || output.includes("1,000")'
+      value: 'output.answer.includes("$1000") || output.answer.includes("1,000")'
     - type: "not-icontains"
       value: "out of my knowledge"

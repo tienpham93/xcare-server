@@ -134,3 +134,49 @@ export interface Ticket {
     createdDate: Date;
     status: 'Completed' | 'Inprogress' | 'Open' | 'Closed';
 }
+
+// ── Agent Graph Enums & Types ───────────────────────────────
+
+/** Frontend-declared message type (sent from the client in the request body). */
+export enum MessageType {
+    GENERAL = "general",
+    SUBMIT = "submit",
+    ROUTER = "router",
+    RANKER = "ranker",
+}
+
+/** LLM-classified user intent (produced by classifyIntent / router prompt). */
+export enum Intent {
+    CHAT = "CHAT",
+    MEDICAL_QUERY = "MEDICAL_QUERY",
+    TICKET_SUBMIT = "TICKET_SUBMIT",
+    TICKET_GET = "TICKET_GET",
+    TICKET_PROCESS = "TICKET_PROCESS",
+    EMERGENCY = "EMERGENCY",
+    OUT_OF_SCOPE = "OUT_OF_SCOPE",
+}
+
+/** Ranker assessment of retrieved context sufficiency. */
+export enum ContextStatus {
+    SUFFICIENT = "SUFFICIENT",
+    INSUFFICIENT = "INSUFFICIENT",
+}
+
+/** Knowledge-base domains used for retrieval filtering. */
+export enum Domain {
+    SYMPTOMS = "symptoms",
+    DIETS = "diets",
+    HOT_TOPICS = "hot_topics",
+    SERVICE_DESK = "service_desk",
+    CONTACTS = "contacts",
+    MEDICAL_PACKAGE = "medical_package",
+    BILLING = "billing",
+    GENERAL = "general",
+}
+
+/** Structured result returned by ollamaService.classifyIntent(). */
+export interface ClassifyIntentResult {
+    intent: Intent;
+    domains: Domain[];
+    reasoning: string;
+}

@@ -1,5 +1,5 @@
 import { serverHost } from "../env";
-import { SearchResult, User } from "../types";
+import { SearchResult, User, MessageType } from "../types";
 import nunjucks from "nunjucks";
 import path from "path";
 
@@ -27,10 +27,17 @@ const userInfos = async (username: string): Promise<string> => {
 };
 
 /**
- * Renders a prompt using Nunjucks
+ * Renders a template using Nunjucks (preserves whitespace)
  */
-const renderPrompt = (templateName: string, context: any): string => {
+export const renderPrompt = (templateName: string, context: any = {}): string => {
     return nunjucks.render(templateName, context);
+};
+
+/**
+ * Renders a template and collapses whitespace (useful for deterministic responses)
+ */
+export const renderResponse = (templateName: string, context: any = {}): string => {
+    return renderPrompt(templateName, context).replace(/\s+/g, ' ').trim();
 };
 
 export const promptGenerator = async (
@@ -41,34 +48,34 @@ export const promptGenerator = async (
     intent: string = "UNKNOWN"
 ): Promise<string> => {
     switch (messageType) {
-        case "general":
-            return renderPrompt("general.njk", {
+        case MessageType.GENERAL:
+            return renderPrompt("tasks/general.njk", {
                 knowledge_items: knowledge,
                 user_query: message,
                 intent: intent
             });
 
-        case "router":
-            return renderPrompt("router.njk", {
+        case MessageType.ROUTER:
+            return renderPrompt("tasks/router.njk", {
                 user_query: message
             });
 
-        case "ranker":
-            return renderPrompt("ranker.njk", {
+        case MessageType.RANKER:
+            return renderPrompt("tasks/ranker.njk", {
                 user_query: message,
                 context_item: knowledge?.[0]?.content || ""
             });
 
-        case "submit": {
+        case MessageType.SUBMIT: {
             const userInfo = username ? await userInfos(username) : "No user information available.";
-            return renderPrompt("ticket_extraction.njk", {
+            return renderPrompt("tasks/ticket_extraction.njk", {
                 user_infos: userInfo,
                 user_query: message
             });
         }
 
         default:
-            return renderPrompt("general.njk", {
+            return renderPrompt("tasks/general.njk", {
                 knowledge_items: knowledge,
                 user_query: message
             });

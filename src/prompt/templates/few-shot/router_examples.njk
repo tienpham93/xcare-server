@@ -1,31 +1,77 @@
+<domains>
+- "symptoms": Physical or mental health conditions and clinical signs (e.g., headache, fever, cough, nausea, toothache).
+- "diets": Nutrition, therapeutic eating plans, and weight management advice (e.g., diabetes diet, cholesterol, caloric intake).
+- "hot_topics": Trending health news, public health alerts, and time-sensitive events (e.g., Covid-19, vaccination updates, pandemics).
+- "service_desk": Technical support and critical escalations for emergencies requiring immediate attention (e.g., Emergency SOS, technician needed).
+- "contacts": Facility locations, administrative contact details, and booking channels (e.g., hospital address, phone numbers).
+- "medical_package": Structured preventative screening sets and wellness checkup bundles (e.g., senior/adolescent screening, package details).
+- "billing": Financial inquiries, including insurance procedures, service costs, and payments (e.g., pricing, fees, consultation rates).
+- "general": Broad wellness tips, healthy lifestyle advice, and any medical topics not covered above (e.g., generic health tips).
+</domains>
+
 <examples>
+--- OUT_OF_SCOPE ---
 Input: "Where is the moon right now?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical astronomy query"}
 Input: "How do I change my car's oil?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical automotive query"}
 Input: "Can you solve this math problem for me?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical math query"}
 Input: "What is the capital of France?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical geography query"}
 Input: "Who won the World Cup in 2022?" → {"intent": "OUT_OF_SCOPE", "domains": [], "reasoning": "Non-medical sports query"}
 
+--- CHAT (pure greetings / small talk, NO medical content) ---
 Input: "Hi how are you?" → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
 Input: "Good morning!" → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
 Input: "Who are you?" → {"intent": "CHAT", "domains": [], "reasoning": "Small talk about identity"}
 Input: "Hello there, nice to meet you." → {"intent": "CHAT", "domains": [], "reasoning": "Greeting"}
 Input: "Are you a real human?" → {"intent": "CHAT", "domains": [], "reasoning": "Small talk about nature"}
 
+--- MEDICAL_QUERY ---
 Input: "I have a headache" → {"intent": "MEDICAL_QUERY", "domains": ["symptoms"], "reasoning": "Headache is a symptom"}
 Input: "What should I eat if I have diabetes?" → {"intent": "MEDICAL_QUERY", "domains": ["diets"], "reasoning": "Nutrition query for diabetes"}
 Input: "How much does a consultation cost?" → {"intent": "MEDICAL_QUERY", "domains": ["billing"], "reasoning": "Billing inquiry"}
 Input: "Do you offer senior checkup packages?" → {"intent": "MEDICAL_QUERY", "domains": ["medical_package"], "reasoning": "Inquiry about health screening packages"}
 Input: "What is the survival rate for stage 4 pancreatic cancer?" → {"intent": "MEDICAL_QUERY", "domains": ["general"], "reasoning": "Healthcare query but complex/unlisted"}
 
-Input: "Submit a ticket about my issue" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket creation request"}
-Input: "Please open a ticket because I have a fever" → {"intent": "TICKET", "domains": [], "reasoning": "Explicit ticket request with symptom info"}
-Input: "Can you create a support ticket, the portal is broken" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket request for technical issue"}
-Input: "Report an incident with my latest bill" → {"intent": "TICKET", "domains": [], "reasoning": "Ticket request for billing issue"}
-Input: "Send a ticket to the tech team" → {"intent": "TICKET", "domains": [], "reasoning": "Explicit request to open a support ticket"}
+--- MIXED INTENT: Greeting + Medical (classified as MEDICAL_QUERY, not CHAT) ---
+Input: "Hi, I have a terrible headache what should I do?" → {"intent": "MEDICAL_QUERY", "domains": ["symptoms"], "reasoning": "Greeting combined with symptom query — medical intent takes priority"}
+Input: "Hello there, I want to know about my consultation fees" → {"intent": "MEDICAL_QUERY", "domains": ["billing"], "reasoning": "Greeting combined with billing inquiry"}
+Input: "Good morning, what are the symptoms of Covid?" → {"intent": "MEDICAL_QUERY", "domains": ["hot_topics"], "reasoning": "Greeting combined with health question"}
 
+--- TICKET_SUBMIT ---
+Input: "Submit a ticket about my issue" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Ticket creation request"}
+Input: "Please open a ticket because I have a fever" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Explicit ticket request with symptom info"}
+Input: "Can you create a support ticket, the portal is broken" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Ticket request for technical issue"}
+Input: "Report an incident with my latest bill" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Ticket request for billing issue"}
+Input: "Send a ticket to the tech team" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Explicit request to open a support ticket"}
+
+--- MIXED INTENT: Greeting + Ticket (classified as TICKET_SUBMIT, not CHAT) ---
+Input: "Hello there, I want to submit a ticket" → {"intent": "TICKET_SUBMIT", "domains": [], "reasoning": "Greeting combined with ticket submission request"}
+
+--- TICKET_GET ---
+Input: "Show me my tickets" → {"intent": "TICKET_GET", "domains": [], "reasoning": "User wants to view existing tickets"}
+Input: "What's the status of my recent support request?" → {"intent": "TICKET_GET", "domains": [], "reasoning": "User inquiring about ticket status"}
+Input: "Can I see my open tickets?" → {"intent": "TICKET_GET", "domains": [], "reasoning": "User wants to view ticket list"}
+
+--- TICKET_PROCESS ---
+Input: "Please close my ticket #456" → {"intent": "TICKET_PROCESS", "domains": [], "reasoning": "User wants to close a specific ticket"}
+Input: "Update the priority on my open ticket" → {"intent": "TICKET_PROCESS", "domains": [], "reasoning": "User wants to modify ticket priority"}
+
+--- EMERGENCY (life-threatening — always overrides CHAT and TICKET) ---
 Input: "I have chest pain and can't breathe" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical emergency symptom"}
 Input: "My friend is unconscious what do I do?" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical life-threatening situation"}
 Input: "Someone has been severely burned" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical trauma emergency"}
 Input: "I am having a stroke" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Critical emergency symptom"}
 Input: "Help! Severe bleeding from an accident" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Life-threatening trauma"}
+
+--- MIXED INTENT: Greeting + Emergency (classified as EMERGENCY, not CHAT) ---
+Input: "Hi there, my friend just collapsed" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Greeting combined with life-threatening event — EMERGENCY overrides"}
+Input: "Hello, someone just had a heart attack near the clinic" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Greeting combined with cardiac emergency"}
+
+--- MIXED INTENT: Ticket + Emergency (EMERGENCY overrides TICKET) ---
+Input: "Open a ticket, someone is having a seizure!" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Life-threatening seizure overrides ticket request"}
+
+--- EMERGENCY enriched ---
+Input: "SOS! Severe allergic reaction, patient can't breathe" → {"intent": "EMERGENCY", "domains": ["service_desk", "symptoms"], "reasoning": "Anaphylaxis — critical emergency"}
+
+--- BOUNDARY: Urgent but NOT emergency (classified as MEDICAL_QUERY) ---
+Input: "I've had mild chest discomfort for a week" → {"intent": "MEDICAL_QUERY", "domains": ["symptoms"], "reasoning": "Chronic mild symptom, not life-threatening emergency"}
 </examples>

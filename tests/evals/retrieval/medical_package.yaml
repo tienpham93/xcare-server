@@ -54,6 +54,6 @@
     request: "How much do your health screening packages cost?"
   assert:
     - type: "javascript"
-      value: 'output.includes("$1000") || output.includes("1,000")'
+      value: 'output.answer.includes("$1000") || output.answer.includes("1,000")'
     - type: "not-icontains"
       value: "out of my knowledge"
